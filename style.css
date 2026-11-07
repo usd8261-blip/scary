@@ -629,3 +629,55 @@ kbd {
     margin-top: 7px;
   }
 }
+
+#gameCanvas {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.hidden-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: none;
+  pointer-events: none;
+}
+
+.hidden-mask.bed {
+  display: block;
+  background:
+    linear-gradient(180deg, #020303 0, #020303f2 12%, transparent 30%, transparent 43%, #020303e8 45%, #020303 55%, transparent 68%, transparent 80%, #020303f5 96%),
+    radial-gradient(ellipse at center, transparent 20%, #000000b5 90%);
+}
+
+.hidden-mask.wardrobe {
+  display: block;
+  background:
+    repeating-linear-gradient(90deg, #020303f5 0, #020303f5 12%, transparent 12%, transparent 18%),
+    radial-gradient(ellipse at center, transparent 15%, #000000b0 90%);
+}
+
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  display: none;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #d8e4dc99;
+  box-shadow: 0 0 5px #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.game-frame.playing .crosshair.visible {
+  display: block;
+}
+
+@media (pointer: coarse) {
+  #gameCanvas {
+    cursor: default;
+  }
+}

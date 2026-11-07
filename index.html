@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#080b0d">
-  <title>До шести — мини-хоррор</title>
+  <title>До шести — 3D-хоррор</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <div>
           <div class="brand-title">ДО ШЕСТИ</div>
-          <div class="brand-subtitle">одна ночь · одна комната</div>
+          <div class="brand-subtitle">3d · одна ночь · одна комната</div>
         </div>
       </div>
       <div class="top-actions">
@@ -23,10 +23,12 @@
       </div>
     </header>
 
-    <section class="game-frame" id="gameFrame" aria-label="Игровая комната">
+    <section class="game-frame" id="gameFrame" aria-label="Трёхмерная игровая комната">
       <canvas id="gameCanvas" width="1100" height="700">
-        Ваш браузер не поддерживает Canvas.
+        Для игры нужен браузер с поддержкой WebGL.
       </canvas>
+      <div class="hidden-mask" id="hiddenMask"></div>
+      <div class="crosshair" id="crosshair"></div>
 
       <div class="hud" id="hud">
         <div class="clock-block">
@@ -64,7 +66,7 @@
           <div class="rules" id="rules">
             <div class="rule">
               <span class="rule-number">01</span>
-              <div><strong>Двигайся тихо</strong><span>WASD или стрелки, Shift — бег</span></div>
+              <div><strong>Осмотрись и двигайся тихо</strong><span>WASD, мышь — обзор, Shift — бег</span></div>
             </div>
             <div class="rule">
               <span class="rule-number">02</span>
@@ -76,15 +78,15 @@
             </div>
           </div>
           <button id="primaryButton" class="primary-button" type="button">Начать ночь</button>
-          <span class="menu-hint" id="menuHint">F — фонарик · P или Esc — пауза</span>
+          <span class="menu-hint" id="menuHint">Мышь или ЛКМ + движение — обзор · F — фонарик · P — пауза</span>
         </div>
       </div>
 
       <div class="mobile-controls" aria-label="Сенсорное управление">
         <div class="dpad">
-          <button type="button" data-key="ArrowUp" class="dpad-up" aria-label="Вверх">↑</button>
+          <button type="button" data-key="ArrowUp" class="dpad-up" aria-label="Вперёд">↑</button>
           <button type="button" data-key="ArrowLeft" class="dpad-left" aria-label="Влево">←</button>
-          <button type="button" data-key="ArrowDown" class="dpad-down" aria-label="Вниз">↓</button>
+          <button type="button" data-key="ArrowDown" class="dpad-down" aria-label="Назад">↓</button>
           <button type="button" data-key="ArrowRight" class="dpad-right" aria-label="Вправо">→</button>
         </div>
         <div class="mobile-actions">
@@ -98,12 +100,16 @@
 
     <footer class="controls-help">
       <span><kbd>WASD</kbd> движение</span>
+      <span><kbd>Мышь</kbd> обзор</span>
       <span><kbd>E</kbd> спрятаться / выйти</span>
       <span><kbd>Shift</kbd> бежать</span>
       <span><kbd>Пробел</kbd> задержать дыхание</span>
       <span><kbd>F</kbd> фонарик</span>
     </footer>
   </main>
-  <script src="game.js" defer></script>
+  <script type="importmap">
+    { "imports": { "three": "./three.module.js" } }
+  </script>
+  <script type="module" src="game.js"></script>
 </body>
 </html>
