@@ -4,3 +4,5 @@ Thumbs.db
 android-app/.gradle/
 android-app/build/
 android-app/app/build/
+rust-pc/target/
+release/

@@ -681,3 +681,235 @@ kbd {
     cursor: default;
   }
 }
+
+.overlay {
+  overflow-y: auto;
+}
+
+.menu-panel {
+  max-height: 100%;
+  flex: 0 1 auto;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+@media (pointer: coarse) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  .app {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  .topbar {
+    flex: 0 0 auto;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand-title {
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
+
+  .brand-mark {
+    width: 8px;
+    height: 24px;
+  }
+
+  .top-actions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .icon-button {
+    min-width: 0;
+    padding: 7px 9px;
+  }
+
+  .game-frame {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: auto;
+  }
+
+  .controls-help {
+    display: none;
+  }
+
+  .overlay {
+    padding: 12px;
+  }
+
+  .menu-panel {
+    width: min(430px, 100%);
+  }
+
+  .menu-panel h1 {
+    font-size: clamp(30px, 10vw, 48px);
+    letter-spacing: 5px;
+  }
+
+  .rules {
+    margin-bottom: 12px;
+  }
+
+  .dpad {
+    grid-template: repeat(3, 32px) / repeat(3, 32px);
+  }
+
+  .mobile-actions {
+    grid-template-columns: repeat(2, 44px);
+    gap: 5px;
+  }
+
+  .mobile-actions button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .game-frame.playing .meters {
+    bottom: 116px;
+  }
+
+  .game-frame.playing .interaction {
+    bottom: 94px;
+  }
+}
+
+@media (pointer: coarse) and (max-height: 500px) {
+  .app {
+    padding: 8px;
+  }
+
+  .topbar {
+    margin-bottom: 6px;
+  }
+
+  .brand-mark {
+    width: 7px;
+    height: 20px;
+  }
+
+  .brand-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .icon-button {
+    padding: 5px 7px;
+    font-size: 8px;
+  }
+
+  .hud {
+    padding: 10px 12px;
+  }
+
+  .clock {
+    font-size: 20px;
+  }
+
+  .overlay {
+    padding: 8px;
+  }
+
+  .menu-panel h1 {
+    margin: 5px 0 7px;
+    font-size: 26px;
+    letter-spacing: 4px;
+  }
+
+  .menu-lead {
+    display: none;
+  }
+
+  .rules {
+    margin-bottom: 7px;
+  }
+
+  .rule {
+    gap: 8px;
+    padding: 4px 8px;
+  }
+
+  .rule-number {
+    font-size: 9px;
+  }
+
+  .rule strong {
+    font-size: 10px;
+  }
+
+  .rule div span {
+    font-size: 8px;
+  }
+
+  .primary-button {
+    padding: 8px 14px;
+    font-size: 10px;
+  }
+
+  .menu-hint {
+    margin-top: 5px;
+    font-size: 8px;
+  }
+
+  .mobile-controls {
+    inset: auto 8px 8px;
+  }
+
+  .dpad {
+    grid-template: repeat(3, 30px) / repeat(3, 30px);
+  }
+
+  .mobile-actions {
+    grid-template-columns: repeat(2, 40px);
+    gap: 4px;
+  }
+
+  .mobile-actions button {
+    width: 40px;
+    height: 40px;
+    font-size: 7px;
+  }
+
+  .mobile-actions .main-action {
+    font-size: 14px;
+  }
+
+  .meters {
+    width: 105px;
+  }
+
+  .game-frame.playing .meters {
+    bottom: 108px;
+  }
+
+  .game-frame.playing .interaction {
+    bottom: 86px;
+  }
+}
