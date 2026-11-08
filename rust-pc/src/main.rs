@@ -1,4 +1,5 @@
 use bevy::{
+    asset::{embedded_asset, embedded_path, io::AssetSourceId, AssetPath},
     audio::Volume, gilrs::GilrsPlugin, input::mouse::MouseMotion,
     pbr::{DirectionalLightShadowMap, FogFalloff, PointLightShadowMap},
     prelude::*,
@@ -322,6 +323,20 @@ struct TaskMarker(usize);
 #[derive(Component)]
 struct TaskText;
 
+struct EmbeddedAssetsPlugin;
+
+impl Plugin for EmbeddedAssetsPlugin {
+    fn build(&self, app: &mut App) {
+        embedded_asset!(app, "../assets/fonts/consola.ttf");
+        embedded_asset!(app, "../assets/monster.glb");
+    }
+}
+
+fn embedded_uri(relative: &'static str) -> AssetPath<'static> {
+    let path = embedded_path!("src", relative);
+    AssetPath::from(path).with_source(AssetSourceId::from("embedded"))
+}
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.018, 0.026, 0.03)))
@@ -347,6 +362,7 @@ fn main() {
                 })
                 .disable::<GilrsPlugin>(),
         )
+        .add_plugins(EmbeddedAssetsPlugin)
         .add_systems(Startup, (setup, prepare_audio))
         .add_systems(
             Update,
@@ -390,7 +406,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     state: Res<GameState>,
 ) {
-    let font = asset_server.load("fonts/consola.ttf");
+    let font = asset_server.load(embedded_uri("../assets/fonts/consola.ttf"));
     build_room(&mut commands, &mut meshes, &mut materials);
 
     commands.spawn((
@@ -457,7 +473,7 @@ fn setup(
 
     commands.spawn((
         SceneBundle {
-            scene: asset_server.load("monster.glb#Scene0"),
+            scene: asset_server.load(embedded_uri("../assets/monster.glb").with_label("Scene0")),
             transform: monster_transform(&state.monster),
             ..default()
         },

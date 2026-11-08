@@ -36,15 +36,9 @@ jobs:
       - name: Build release
         run: cargo build --release --manifest-path rust-pc/Cargo.toml
 
-      - name: Stage assets next to executable
-        run: Copy-Item -Recurse rust-pc/assets rust-pc/target/release/assets
-        shell: pwsh
-
       - name: Upload executable
         uses: actions/upload-artifact@v4
         with:
           name: do-shesti-windows
-          path: |
-            rust-pc/target/release/do-shesti.exe
-            rust-pc/target/release/assets
+          path: rust-pc/target/release/do-shesti.exe
           retention-days: 14
