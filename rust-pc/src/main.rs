@@ -154,7 +154,7 @@ impl Default for PlayerState {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct MonsterState {
     position: Vec3,
     facing: f32,
@@ -167,6 +167,10 @@ struct MonsterState {
     lost_timer: f32,
     alerted_hide: bool,
     stuck: f32,
+    path: Vec<Vec3>,
+    path_index: usize,
+    path_target: Option<Vec3>,
+    repath_timer: f32,
     anim: f32,
 }
 
@@ -184,6 +188,10 @@ impl Default for MonsterState {
             lost_timer: 0.0,
             alerted_hide: false,
             stuck: 0.0,
+            path: Vec::new(),
+            path_index: 0,
+            path_target: None,
+            repath_timer: 0.0,
             anim: 0.0,
         }
     }
@@ -1187,16 +1195,22 @@ fn update_monster(
             state.monster.timer -= dt;
             if state.monster.timer <= 0.0 {
                 state.monster.mode = MonsterMode::Entering;
+                state.monster.timer = 2.2;
                 state.monster.position = Vec3::new(5.18, 0.0, 1.5);
                 state.monster.target = None;
                 state.monster.alerted_hide = false;
+                state.monster.stuck = 0.0;
                 notify_danger(&mut state, "Оно вошло в комнату.", 2.4);
                 events.send(SoundEvent::Alert);
             }
         }
         MonsterMode::Entering => {
-            let remaining = move_monster(&mut state, Vec3::new(4.35, 0.0, 1.45), 0.85, dt);
-            if remaining < 0.2 {
+            state.monster.timer -= dt;
+            let remaining = move_monster_direct(&mut state, Vec3::new(4.35, 0.0, 1.45), 0.85, dt);
+            if remaining < 0.22
+                || state.monster.timer <= 0.0
+                || (state.monster.position.x < 4.7 && state.monster.stuck < 0.4)
+            {
                 begin_hunt(&mut state);
             }
         }
@@ -1208,24 +1222,26 @@ fn update_monster(
                 player_visible = can_see_player(&state);
                 if state.player.hidden.is_none() {
                     if player_visible {
-                        let rate = if state.player.flashlight { 1.05 } else { 0.8 }
-                            * if state.player.sprinting { 1.4 } else { 1.0 };
+                        let rate = if state.player.flashlight { 1.55 } else { 1.15 }
+                            * if state.player.sprinting { 1.25 } else { 1.0 };
                         state.monster.awareness = (state.monster.awareness + rate * dt).min(1.0);
                         state.monster.last_seen = Some(state.player.position);
                     } else {
-                        state.monster.awareness = (state.monster.awareness - 0.32 * dt).max(0.0);
+                        state.monster.awareness = (state.monster.awareness - 0.22 * dt).max(0.0);
                         let dist = distance_xz(state.monster.position, state.player.position);
-                        if state.player.sprinting && dist < 6.5 {
-                            state.monster.awareness = (state.monster.awareness + 0.42 * dt).min(1.0);
-                            choose_patrol_target(&mut state);
+                        let noise_range = if state.player.sprinting { 8.0 } else { 5.5 };
+                        if state.player.moving && dist < noise_range {
+                            let rate = if state.player.sprinting { 0.65 } else { 0.34 };
+                            state.monster.awareness = (state.monster.awareness + rate * dt).min(1.0);
+                            state.monster.last_seen = Some(state.player.position);
                         } else if state.task_progress > 0.0 && dist < 7.5 {
                             state.monster.awareness = (state.monster.awareness + 0.5 * dt).min(1.0);
                             state.monster.last_seen = Some(state.player.position);
                         }
                     }
-                    if state.monster.awareness >= 1.0 {
+                    if state.monster.awareness >= 0.85 {
                         state.monster.mode = MonsterMode::Chase;
-                        state.monster.lost_timer = 2.7;
+                        state.monster.lost_timer = 3.2;
                         state.monster.last_seen = Some(state.player.position);
                         notify_danger(&mut state, "Оно тебя увидело. Беги!", 2.5);
                         events.send(SoundEvent::Alert);
@@ -1259,17 +1275,23 @@ fn update_monster(
                     choose_patrol_target(&mut state);
                 }
             } else {
-                let sees = distance_xz(state.monster.position, state.player.position) < 7.2
-                    && has_line_of_sight(state.monster.position, state.player.position);
+                let player_distance = distance_xz(state.monster.position, state.player.position);
+                let sees = can_see_player(&state)
+                    || (player_distance < 2.2
+                        && has_line_of_sight(state.monster.position, state.player.position));
                 if sees {
                     state.monster.last_seen = Some(state.player.position);
-                    state.monster.lost_timer = 2.7;
+                    state.monster.lost_timer = 3.2;
                 } else {
                     state.monster.lost_timer -= dt;
+                    if state.player.moving && player_distance < 5.5 {
+                        state.monster.last_seen = Some(state.player.position);
+                        state.monster.lost_timer = state.monster.lost_timer.max(1.2);
+                    }
                 }
                 let target = state.monster.last_seen.unwrap_or(state.player.position);
                 move_monster(&mut state, target, 1.55 + progress * 0.3, dt);
-                if distance_xz(state.monster.position, state.player.position) < 0.78 {
+                if distance_xz(state.monster.position, state.player.position) < 0.86 {
                     end_game(&mut state, false, "Оно догнало тебя.", &mut events);
                 } else if state.monster.lost_timer <= 0.0 {
                     state.monster.mode = MonsterMode::Hunting;
@@ -1280,13 +1302,16 @@ fn update_monster(
             }
         }
         MonsterMode::Leaving => {
-            let remaining = move_monster(&mut state, Vec3::new(5.18, 0.0, 1.5), 1.0, dt);
-            if remaining < 0.18 {
+            state.monster.timer -= dt;
+            let remaining = move_monster_direct(&mut state, Vec3::new(5.18, 0.0, 1.5), 1.0, dt);
+            if remaining < 0.2 || state.monster.timer <= 0.0 || state.monster.position.x > 5.02 {
                 state.monster.mode = MonsterMode::Away;
                 state.monster.timer = 8.0 + next_random(&mut state) * 5.0 - progress * 3.0;
                 state.monster.awareness = 0.0;
                 state.monster.exposure = 0.0;
                 state.monster.alerted_hide = false;
+                state.monster.path.clear();
+                state.monster.path_target = None;
             }
         }
     }
@@ -1361,18 +1386,209 @@ fn begin_hunt(state: &mut GameState) {
     state.monster.mode = MonsterMode::Hunting;
     state.monster.timer = 12.0 + next_random(state) * 6.0 - (state.elapsed / NIGHT_DURATION) * 3.0;
     state.monster.awareness = 0.0;
+    state.monster.path.clear();
+    state.monster.path_target = None;
+    state.monster.stuck = 0.0;
     choose_patrol_target(state);
 }
 
 fn begin_leaving(state: &mut GameState) {
     state.monster.mode = MonsterMode::Leaving;
+    state.monster.timer = 2.2;
     state.monster.awareness = 0.0;
     state.monster.exposure = 0.0;
     state.monster.alerted_hide = false;
+    state.monster.path.clear();
+    state.monster.path_target = None;
     notify(state, "Шаги удаляются.", 2.2);
 }
 
+fn nearest_walkable_cell(
+    x: f32,
+    z: f32,
+    cell: f32,
+    min_x: f32,
+    min_z: f32,
+    cols: usize,
+    rows: usize,
+    walkable: &[bool],
+) -> Option<usize> {
+    let cx = ((x - min_x) / cell).round().clamp(0.0, cols as f32 - 1.0) as usize;
+    let cz = ((z - min_z) / cell).round().clamp(0.0, rows as f32 - 1.0) as usize;
+    if walkable[cz * cols + cx] {
+        return Some(cz * cols + cx);
+    }
+    for radius in 1_i32..6 {
+        for dz in -radius..=radius {
+            for dx in -radius..=radius {
+                if dx.abs().max(dz.abs()) != radius {
+                    continue;
+                }
+                let nx = cx as i32 + dx;
+                let nz = cz as i32 + dz;
+                if nx < 0 || nx >= cols as i32 || nz < 0 || nz >= rows as i32 {
+                    continue;
+                }
+                let index = nz as usize * cols + nx as usize;
+                if walkable[index] {
+                    return Some(index);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn find_path(from: Vec3, to: Vec3) -> Option<Vec<Vec3>> {
+    const CELL: f32 = 0.35;
+    const RADIUS: f32 = 0.36;
+    let min_x = ROOM_MIN_X + RADIUS + 0.02;
+    let min_z = ROOM_MIN_Z + RADIUS + 0.02;
+    let cols = ((ROOM_MAX_X - ROOM_MIN_X - RADIUS * 2.0 - 0.04) / CELL).floor() as usize + 1;
+    let rows = ((ROOM_MAX_Z - ROOM_MIN_Z - RADIUS * 2.0 - 0.04) / CELL).floor() as usize + 1;
+    let total = cols * rows;
+    let mut walkable = vec![false; total];
+    for row in 0..rows {
+        for col in 0..cols {
+            walkable[row * cols + col] = !collides(min_x + col as f32 * CELL, min_z + row as f32 * CELL, RADIUS);
+        }
+    }
+    let start = nearest_walkable_cell(from.x, from.z, CELL, min_x, min_z, cols, rows, &walkable)?;
+    let goal = nearest_walkable_cell(to.x, to.z, CELL, min_x, min_z, cols, rows, &walkable)?;
+    let mut came_from = vec![-1_i32; total];
+    let mut g_score = vec![f32::INFINITY; total];
+    let mut closed = vec![false; total];
+    let mut open = vec![start];
+    g_score[start] = 0.0;
+    let heuristic = |index: usize| {
+        let dx = (index % cols) as f32 - (goal % cols) as f32;
+        let dz = (index / cols) as f32 - (goal / cols) as f32;
+        dx.abs().max(dz.abs()) + 0.4142 * dx.abs().min(dz.abs())
+    };
+    let mut iterations = 0;
+    while !open.is_empty() && iterations < total * 4 {
+        iterations += 1;
+        let mut best_position = 0_usize;
+        let mut best_score = f32::INFINITY;
+        for (position, &index) in open.iter().enumerate() {
+            let score = g_score[index] + heuristic(index);
+            if score < best_score {
+                best_score = score;
+                best_position = position;
+            }
+        }
+        let current = open.swap_remove(best_position);
+        if current == goal {
+            let mut path = Vec::new();
+            let mut cursor = Some(current);
+            while let Some(index) = cursor {
+                let col = index % cols;
+                let row = index / cols;
+                path.push(Vec3::new(min_x + col as f32 * CELL, 0.0, min_z + row as f32 * CELL));
+                cursor = if came_from[index] >= 0 {
+                    Some(came_from[index] as usize)
+                } else {
+                    None
+                };
+            }
+            path.reverse();
+            return Some(path);
+        }
+        closed[current] = true;
+        let col = current % cols;
+        let row = current / cols;
+        for dz in -1_i32..=1 {
+            for dx in -1_i32..=1 {
+                if dx == 0 && dz == 0 {
+                    continue;
+                }
+                let nx = col as i32 + dx;
+                let nz = row as i32 + dz;
+                if nx < 0 || nx >= cols as i32 || nz < 0 || nz >= rows as i32 {
+                    continue;
+                }
+                let next = nz as usize * cols + nx as usize;
+                if !walkable[next] || closed[next] {
+                    continue;
+                }
+                if dx != 0 && dz != 0 && (!walkable[row * cols + nx as usize] || !walkable[nz as usize * cols + col]) {
+                    continue;
+                }
+                let cost = g_score[current] + if dx != 0 && dz != 0 { 1.4142 } else { 1.0 };
+                if cost < g_score[next] {
+                    came_from[next] = current as i32;
+                    g_score[next] = cost;
+                    if !open.contains(&next) {
+                        open.push(next);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
 fn move_monster(state: &mut GameState, target: Vec3, speed: f32, dt: f32) -> f32 {
+    let target_distance = distance_xz(state.monster.position, target);
+    if target_distance < 0.02 {
+        return 0.0;
+    }
+    state.monster.repath_timer -= dt;
+    let target_moved = state
+        .monster
+        .path_target
+        .map(|path_target| distance_xz(target, path_target) > 0.12)
+        .unwrap_or(true);
+    if state.monster.path.is_empty()
+        || state.monster.path_index >= state.monster.path.len()
+        || target_moved
+        || state.monster.repath_timer <= 0.0
+    {
+        state.monster.path = find_path(state.monster.position, target).unwrap_or_default();
+        state.monster.path_index = 0;
+        state.monster.path_target = Some(target);
+        state.monster.repath_timer = if state.monster.mode == MonsterMode::Chase { 0.22 } else { 0.65 };
+    }
+    let mut waypoint = target;
+    if let Some(point) = state.monster.path.get(state.monster.path_index) {
+        waypoint = *point;
+    }
+    while state.monster.path_index + 1 < state.monster.path.len()
+        && distance_xz(state.monster.position, waypoint) < 0.18
+    {
+        state.monster.path_index += 1;
+        waypoint = state.monster.path[state.monster.path_index];
+    }
+    let delta = waypoint - state.monster.position;
+    let flat = Vec2::new(delta.x, delta.z);
+    let waypoint_distance = flat.length().max(0.001);
+    state.monster.facing = flat.y.atan2(flat.x);
+    let step = flat / waypoint_distance * speed * dt;
+    let before = state.monster.position;
+    let radius = 0.34;
+    let next_x = state.monster.position.x + step.x;
+    if !collides(next_x, state.monster.position.z, radius) {
+        state.monster.position.x = next_x;
+    }
+    let next_z = state.monster.position.z + step.y;
+    if !collides(state.monster.position.x, next_z, radius) {
+        state.monster.position.z = next_z;
+    }
+    let moved = distance_xz(before, state.monster.position);
+    if moved < 0.001 {
+        state.monster.stuck += dt;
+        state.monster.path.clear();
+        state.monster.repath_timer = 0.0;
+        if state.monster.mode == MonsterMode::Hunting && state.monster.stuck > 0.65 {
+            choose_patrol_target(state);
+        }
+    } else {
+        state.monster.stuck = (state.monster.stuck - dt * 2.0).max(0.0);
+    }
+    target_distance
+}
+
+fn move_monster_direct(state: &mut GameState, target: Vec3, speed: f32, dt: f32) -> f32 {
     let delta = target - state.monster.position;
     let flat = Vec2::new(delta.x, delta.z);
     let dist = flat.length();
@@ -1391,17 +1607,10 @@ fn move_monster(state: &mut GameState, target: Vec3, speed: f32, dt: f32) -> f32
     if !collides(state.monster.position.x, next_z, radius) {
         state.monster.position.z = next_z;
     }
-    let moved = distance_xz(before, state.monster.position);
-    if moved < 0.001 {
+    if distance_xz(before, state.monster.position) < 0.001 {
         state.monster.stuck += dt;
-        if state.monster.mode == MonsterMode::Hunting && state.monster.stuck > 0.3 {
-            choose_patrol_target(state);
-        }
-        if state.monster.mode == MonsterMode::Entering && state.monster.stuck > 1.2 {
-            begin_hunt(state);
-        }
     } else {
-        state.monster.stuck = 0.0;
+        state.monster.stuck = (state.monster.stuck - dt * 2.0).max(0.0);
     }
     dist
 }
@@ -1418,6 +1627,8 @@ fn choose_patrol_target(state: &mut GameState) {
     }
     let index = (next_random(state) * candidates.len() as f32) as usize;
     state.monster.target = Some(candidates[index.min(candidates.len() - 1)]);
+    state.monster.path.clear();
+    state.monster.path_target = None;
 }
 
 fn next_random(state: &mut GameState) -> f32 {
@@ -1433,17 +1644,17 @@ fn can_see_player(state: &GameState) -> bool {
         return false;
     }
     let dist = distance_xz(state.monster.position, state.player.position);
-    let range = if state.player.flashlight { 6.4 } else { 4.8 };
+    let range = if state.player.flashlight { 8.5 } else { 6.5 };
     if dist > range || !has_line_of_sight(state.monster.position, state.player.position) {
         return false;
     }
-    if dist < 1.35 {
+    if dist < 1.6 || (state.player.flashlight && dist < 2.4) {
         return true;
     }
     let angle = (state.player.position.z - state.monster.position.z)
         .atan2(state.player.position.x - state.monster.position.x);
     let difference = wrap_angle(angle - state.monster.facing);
-    difference.abs() < 1.12
+    difference.abs() < 1.25
 }
 
 fn has_line_of_sight(from: Vec3, to: Vec3) -> bool {

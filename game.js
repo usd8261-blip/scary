@@ -31,6 +31,11 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
 
   const NIGHT_DURATION = 150;
   const ROOM = { minX: -5.65, maxX: 5.65, minZ: -3.65, maxZ: 3.65 };
+  const taskSpots = [
+    { name: "починить окно", hint: "подойди к окну", x: 1.75, z: -3.1, lookX: 1.75, lookY: 1.6, lookZ: -3.8, hold: 3, bonus: 20 },
+    { name: "проверить розетку", hint: "подойди к тумбе", x: 1.1, z: 2.1, lookX: 1.1, lookY: 0.9, lookZ: 1.2, hold: 2.5, bonus: 15 },
+    { name: "закрыть засов", hint: "подойди к двери", x: 5, z: 1.5, lookX: 5.75, lookY: 1.2, lookZ: 1.5, hold: 2, bonus: 15 }
+  ];
   const keys = new Set();
   const touchMode = window.matchMedia("(pointer: coarse)").matches;
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -226,6 +231,23 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ color: 0xaab5a9, size: 0.015, transparent: true, opacity: 0.24 }));
   scene.add(dust);
 
+  const taskMarkers = [];
+  const taskMarkerGeometry = new THREE.BoxGeometry(0.14, 0.14, 0.14);
+  const taskMarkerMaterial = new THREE.MeshStandardMaterial({
+    color: 0xd8a33d,
+    emissive: 0xf0b23a,
+    emissiveIntensity: 1.8,
+    roughness: 0.35
+  });
+  for (let i = 0; i < taskSpots.length; i += 1) {
+    const spot = taskSpots[i];
+    const marker = new THREE.Mesh(taskMarkerGeometry, taskMarkerMaterial);
+    marker.position.set(spot.lookX, spot.lookY, spot.lookZ);
+    marker.castShadow = true;
+    scene.add(marker);
+    taskMarkers.push(marker);
+  }
+
   function buildMonster() {
     const group = new THREE.Group();
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.4, 1.05, 10), materials.monster);
@@ -312,6 +334,9 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   let stepTimer = 0;
   let player;
   let monster;
+  let tasksDone;
+  let taskProgress;
+  let activeTask;
   let lookPointer = null;
   let lookX = 0;
   let lookY = 0;
@@ -464,8 +489,16 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       lostTimer: 0,
       alertedHide: false,
       stuck: 0,
+      path: null,
+      pathIndex: 0,
+      pathTarget: null,
+      repathTimer: 0,
       anim: 0
     };
+    tasksDone = taskSpots.map(() => false);
+    taskProgress = 0;
+    activeTask = null;
+    for (let i = 0; i < taskMarkers.length; i += 1) taskMarkers[i].visible = true;
     scene.background.set(0x050708);
     ambient.intensity = 0.16;
     wardrobeDoors.visible = true;
@@ -630,6 +663,53 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     return nearest;
   }
 
+  function nearestTask() {
+    let nearest = null;
+    let nearestDistance = 1.35;
+    for (let i = 0; i < taskSpots.length; i += 1) {
+      if (tasksDone[i]) continue;
+      const spot = taskSpots[i];
+      const dist = Math.hypot(player.x - spot.x, player.z - spot.z);
+      if (dist < nearestDistance) {
+        nearest = i;
+        nearestDistance = dist;
+      }
+    }
+    return nearest;
+  }
+
+  function updateTasks(dt) {
+    if (mode !== "playing" || player.hidden) {
+      taskProgress = 0;
+      activeTask = null;
+      return;
+    }
+    const taskIndex = nearestTask();
+    activeTask = nearestHideSpot() ? null : taskIndex;
+    if (taskIndex === null || activeTask === null) {
+      taskProgress = Math.max(0, taskProgress - dt * 1.5);
+      return;
+    }
+    const spot = taskSpots[taskIndex];
+    if (keys.has("KeyE")) {
+      taskProgress += dt / spot.hold;
+      player.noise = Math.max(player.noise, 45);
+      if (taskProgress >= 1) {
+        tasksDone[taskIndex] = true;
+        taskProgress = 0;
+        activeTask = null;
+        elapsed = Math.min(NIGHT_DURATION, elapsed + spot.bonus);
+        taskMarkers[taskIndex].visible = false;
+        sound.tone(392, 0.12, "sine", 0.08, 392);
+        sound.tone(523, 0.14, "sine", 0.08, 523, 0.12);
+        sound.tone(659, 0.2, "sine", 0.07, 659, 0.24);
+        notify(`«${spot.name}» выполнено — время приблизилось к утру.`, 2.8);
+      }
+    } else {
+      taskProgress = Math.max(0, taskProgress - dt * 1.5);
+    }
+  }
+
   function interact() {
     if (mode !== "playing") return;
     if (player.hidden) {
@@ -648,7 +728,12 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     }
     const spot = nearestHideSpot();
     if (!spot) {
-      notify("Здесь негде спрятаться.", 1.4);
+      const taskIndex = nearestTask();
+      if (taskIndex !== null) {
+        notify(`Зажми E — ${taskSpots[taskIndex].hint}.`, 1.4);
+      } else {
+        notify("Здесь негде спрятаться.", 1.4);
+      }
       return;
     }
     const visibleAtEntrance = monster.state === "chase" && distance(monster, { x: spot.exitX, z: spot.exitZ }) < 6 && hasLineOfSight(monster, { x: spot.exitX, z: spot.exitZ });
@@ -738,19 +823,154 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     monster.state = "hunting";
     monster.timer = random(12, 18) - (elapsed / NIGHT_DURATION) * 3;
     monster.awareness = 0;
+    monster.path = null;
+    monster.pathTarget = null;
+    monster.stuck = 0;
     choosePatrolTarget();
   }
 
   function beginLeaving() {
     monster.state = "leaving";
+    monster.timer = 2.2;
     monster.target = { x: 5.18, z: 1.5 };
     monster.awareness = 0;
     monster.exposure = 0;
     monster.alertedHide = false;
+    monster.path = null;
+    monster.pathTarget = null;
     notify("Шаги удаляются.", 2.2);
   }
 
+  function nearestWalkableCell(x, z, cell, minX, minZ, cols, rows, walkable) {
+    const cx = clamp(Math.round((x - minX) / cell), 0, cols - 1);
+    const cz = clamp(Math.round((z - minZ) / cell), 0, rows - 1);
+    if (walkable[cz * cols + cx]) return cz * cols + cx;
+    for (let radius = 1; radius < 6; radius += 1) {
+      for (let dz = -radius; dz <= radius; dz += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== radius) continue;
+          const nx = cx + dx;
+          const nz = cz + dz;
+          if (nx < 0 || nx >= cols || nz < 0 || nz >= rows) continue;
+          const index = nz * cols + nx;
+          if (walkable[index]) return index;
+        }
+      }
+    }
+    return -1;
+  }
+
+  function findPath(from, to) {
+    const cell = 0.35;
+    const minX = ROOM.minX + monster.radius + 0.02;
+    const minZ = ROOM.minZ + monster.radius + 0.02;
+    const cols = Math.floor((ROOM.maxX - ROOM.minX - monster.radius * 2 - 0.04) / cell) + 1;
+    const rows = Math.floor((ROOM.maxZ - ROOM.minZ - monster.radius * 2 - 0.04) / cell) + 1;
+    const walkable = new Array(cols * rows).fill(false);
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        walkable[row * cols + col] = !collides(minX + col * cell, minZ + row * cell, monster.radius + 0.02);
+      }
+    }
+    const start = nearestWalkableCell(from.x, from.z, cell, minX, minZ, cols, rows, walkable);
+    const goal = nearestWalkableCell(to.x, to.z, cell, minX, minZ, cols, rows, walkable);
+    if (start < 0 || goal < 0) return null;
+    const total = cols * rows;
+    const cameFrom = new Int32Array(total).fill(-1);
+    const gScore = new Float32Array(total).fill(Infinity);
+    const closed = new Uint8Array(total);
+    const open = [start];
+    gScore[start] = 0;
+    const heuristic = (index) => {
+      const dx = Math.abs((index % cols) - (goal % cols));
+      const dz = Math.abs(Math.floor(index / cols) - Math.floor(goal / cols));
+      return Math.max(dx, dz) + 0.4142 * Math.min(dx, dz);
+    };
+    let iterations = 0;
+    while (open.length && iterations < total * 4) {
+      iterations += 1;
+      let best = 0;
+      let bestScore = Infinity;
+      for (let i = 0; i < open.length; i += 1) {
+        const index = open[i];
+        const score = gScore[index] + heuristic(index);
+        if (score < bestScore) {
+          bestScore = score;
+          best = i;
+        }
+      }
+      const current = open.splice(best, 1)[0];
+      if (current === goal) {
+        const path = [];
+        let cursor = current;
+        while (cursor !== -1) {
+          const col = cursor % cols;
+          const row = Math.floor(cursor / cols);
+          path.push({ x: minX + col * cell, z: minZ + row * cell });
+          cursor = cameFrom[cursor];
+        }
+        path.reverse();
+        return path;
+      }
+      closed[current] = 1;
+      const col = current % cols;
+      const row = Math.floor(current / cols);
+      for (let dz = -1; dz <= 1; dz += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          if (!dx && !dz) continue;
+          const nx = col + dx;
+          const nz = row + dz;
+          if (nx < 0 || nx >= cols || nz < 0 || nz >= rows) continue;
+          const next = nz * cols + nx;
+          if (!walkable[next] || closed[next]) continue;
+          if (dx && dz && (!walkable[row * cols + nx] || !walkable[nz * cols + col])) continue;
+          const cost = gScore[current] + (dx && dz ? 1.4142 : 1);
+          if (cost < gScore[next]) {
+            cameFrom[next] = current;
+            gScore[next] = cost;
+            if (!open.includes(next)) open.push(next);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   function moveMonster(target, speed, dt) {
+    if (!target) return 0;
+    const targetDistance = distance(monster, target);
+    if (targetDistance < 0.02) return 0;
+    monster.repathTimer -= dt;
+    const targetMoved = !monster.pathTarget || Math.hypot(target.x - monster.pathTarget.x, target.z - monster.pathTarget.z) > 0.12;
+    if (!monster.path || monster.pathIndex >= monster.path.length || targetMoved || monster.repathTimer <= 0) {
+      monster.path = findPath(monster, target);
+      monster.pathIndex = 0;
+      monster.pathTarget = { x: target.x, z: target.z };
+      monster.repathTimer = monster.state === "chase" ? 0.22 : 0.65;
+    }
+    let waypoint = monster.path && monster.pathIndex < monster.path.length ? monster.path[monster.pathIndex] : target;
+    while (monster.path && monster.pathIndex < monster.path.length - 1 && Math.hypot(monster.x - waypoint.x, monster.z - waypoint.z) < 0.18) {
+      monster.pathIndex += 1;
+      waypoint = monster.path[monster.pathIndex];
+    }
+    const dx = waypoint.x - monster.x;
+    const dz = waypoint.z - monster.z;
+    const waypointDistance = Math.hypot(dx, dz) || 1;
+    monster.facing = Math.atan2(dz, dx);
+    const moved = moveWithCollisions(monster, (dx / waypointDistance) * speed * dt, (dz / waypointDistance) * speed * dt);
+    if (moved < 0.001) {
+      monster.stuck += dt;
+      monster.path = null;
+      monster.repathTimer = 0;
+      if (monster.state === "hunting" && monster.stuck > 0.65) choosePatrolTarget();
+      if (monster.state === "entering" && monster.stuck > 1.2) beginHunt();
+    } else {
+      monster.stuck = Math.max(0, monster.stuck - dt * 2);
+    }
+    return targetDistance;
+  }
+
+  function moveMonsterDirect(target, speed, dt) {
     if (!target) return 0;
     const dx = target.x - monster.x;
     const dz = target.z - monster.z;
@@ -758,25 +978,21 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     if (dist < 0.02) return 0;
     monster.facing = Math.atan2(dz, dx);
     const moved = moveWithCollisions(monster, (dx / dist) * speed * dt, (dz / dist) * speed * dt);
-    if (moved < 0.001) {
-      monster.stuck += dt;
-      if (monster.state === "hunting" && monster.stuck > 0.3) choosePatrolTarget();
-      if (monster.state === "entering" && monster.stuck > 1.2) beginHunt();
-    } else {
-      monster.stuck = 0;
-    }
+    if (moved < 0.001) monster.stuck += dt;
+    else monster.stuck = Math.max(0, monster.stuck - dt * 2);
     return dist;
   }
 
   function canSeePlayer() {
     if (player.hidden) return false;
     const dist = distance(monster, player);
-    const range = player.flashlight ? 6.4 : 4.8;
+    const range = player.flashlight ? 8.5 : 6.5;
     if (dist > range || !hasLineOfSight(monster, player)) return false;
-    if (dist < 1.35) return true;
+    if (dist < 1.6) return true;
+    if (player.flashlight && dist < 2.4) return true;
     const angle = Math.atan2(player.z - monster.z, player.x - monster.x);
     const difference = Math.atan2(Math.sin(angle - monster.facing), Math.cos(angle - monster.facing));
-    return Math.abs(difference) < 1.12;
+    return Math.abs(difference) < 1.25;
   }
 
   function updateExposure(dt) {
@@ -819,15 +1035,19 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       m.timer -= dt;
       if (m.timer <= 0) {
         m.state = "entering";
+        m.timer = 2.2;
         m.target = { x: 4.35, z: 1.45 };
         m.x = 5.18;
         m.z = 1.5;
         m.alertedHide = false;
+        m.stuck = 0;
         notify("Оно вошло в комнату.", 2.4, true);
         sound.alert();
       }
     } else if (m.state === "entering") {
-      if (moveMonster(m.target, 0.85, dt) < 0.2) beginHunt();
+      m.timer -= dt;
+      const remaining = moveMonsterDirect(m.target, 0.85, dt);
+      if (remaining < 0.22 || m.timer <= 0 || (m.x < 4.7 && m.stuck < 0.4)) beginHunt();
     } else if (m.state === "hunting") {
       m.timer -= dt;
       if (m.timer <= 0) {
@@ -836,19 +1056,20 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
         if (!player.hidden) {
           const visible = canSeePlayer();
           if (visible) {
-            const rate = (player.flashlight ? 1.05 : 0.8) * (player.sprinting ? 1.4 : 1);
+            const rate = (player.flashlight ? 1.55 : 1.15) * (player.sprinting ? 1.25 : 1);
             m.awareness = Math.min(1, m.awareness + rate * dt);
             m.lastSeen = { x: player.x, z: player.z };
           } else {
-            m.awareness = Math.max(0, m.awareness - 0.32 * dt);
-            if (player.sprinting && distance(m, player) < 6.5) {
-              m.awareness = Math.min(1, m.awareness + 0.42 * dt);
+            m.awareness = Math.max(0, m.awareness - 0.22 * dt);
+            const noiseRange = player.sprinting ? 8.0 : 5.5;
+            if (player.moving && distance(m, player) < noiseRange) {
+              m.awareness = Math.min(1, m.awareness + (player.sprinting ? 0.65 : 0.34) * dt);
               m.target = { x: player.x, z: player.z };
             }
           }
-          if (m.awareness >= 1) {
+          if (m.awareness >= 0.85) {
             m.state = "chase";
-            m.lostTimer = 2.7;
+            m.lostTimer = 3.2;
             m.lastSeen = { x: player.x, z: player.z };
             notify("Оно тебя увидело. Беги!", 2.5, true);
             sound.alert();
@@ -872,15 +1093,19 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
           choosePatrolTarget();
         }
       } else {
-        const sees = distance(m, player) < 7.2 && hasLineOfSight(m, player);
+        const sees = canSeePlayer() || (distance(m, player) < 2.2 && hasLineOfSight(m, player));
         if (sees) {
           m.lastSeen = { x: player.x, z: player.z };
-          m.lostTimer = 2.7;
+          m.lostTimer = 3.2;
         } else {
           m.lostTimer -= dt;
+          if (player.moving && distance(m, player) < 5.5) {
+            m.lastSeen = { x: player.x, z: player.z };
+            m.lostTimer = Math.max(m.lostTimer, 1.2);
+          }
         }
         moveMonster(m.lastSeen || player, 1.55 + progress * 0.3, dt);
-        if (distance(m, player) < m.radius + player.radius + 0.12) {
+        if (distance(m, player) < m.radius + player.radius + 0.24) {
           endGame(false, "Оно догнало тебя. Выключай свет, не беги без нужды и прячься до погони.");
         } else if (m.lostTimer <= 0) {
           m.state = "hunting";
@@ -890,12 +1115,16 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
         }
       }
     } else if (m.state === "leaving") {
-      if (moveMonster(m.target, 1.0, dt) < 0.18) {
+      m.timer -= dt;
+      const remaining = moveMonsterDirect(m.target, 1.0, dt);
+      if (remaining < 0.2 || m.timer <= 0 || m.x > 5.02) {
         m.state = "away";
         m.timer = random(8, 13) - progress * 3;
         m.awareness = 0;
         m.exposure = 0;
         m.alertedHide = false;
+        m.path = null;
+        m.pathTarget = null;
       }
     }
     if (mode === "playing") updateExposure(dt);
@@ -932,6 +1161,17 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     warningLight.intensity = monster.state === "warning" ? 3.5 + Math.sin(performance.now() / 130) * 1.5 : 0;
     monitorLight.intensity = 1.35 + Math.sin(performance.now() / 900) * 0.15;
     dust.rotation.y += dt * 0.008;
+    const sceneTime = performance.now() / 1000;
+    for (let i = 0; i < taskMarkers.length; i += 1) {
+      const marker = taskMarkers[i];
+      const spot = taskSpots[i];
+      marker.visible = !tasksDone[i];
+      if (!marker.visible) continue;
+      const pulse = 1 + Math.sin(sceneTime * 2.4 + i * 2.1) * 0.25;
+      marker.position.set(spot.lookX, spot.lookY + Math.sin(sceneTime * 1.6 + i) * 0.05, spot.lookZ);
+      marker.rotation.y = sceneTime * 0.9 + i;
+      marker.scale.setScalar(pulse);
+    }
   }
 
   function updateHUD() {
@@ -972,7 +1212,12 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     if (mode === "playing") {
       if (player.hidden) prompt = closeToHidden ? "Удерживай ПРОБЕЛ — не дыши" : "E — выйти из укрытия";
       else if (nearestHideSpot()) prompt = `E — спрятаться ${nearestHideSpot().name}`;
-      else if (monster.state === "chase") prompt = "Беги или незаметно спрячься";
+      else if (activeTask !== null) {
+        const spot = taskSpots[activeTask];
+        prompt = taskProgress > 0
+          ? `${spot.name} · ${Math.floor(taskProgress * 100)}%`
+          : `Удерживай E — ${spot.hint}`;
+      } else if (monster.state === "chase") prompt = "Беги или незаметно спрячься";
     }
     ui.interaction.textContent = prompt;
     ui.interaction.classList.toggle("visible", Boolean(prompt));
@@ -990,6 +1235,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     }
     if (noticeTimer > 0) noticeTimer -= dt;
     updatePlayer(dt);
+    updateTasks(dt);
     updateMonster(dt);
     if (mode !== "playing") return;
     const proximity = monster.state === "away" ? 0 : clamp(1 - distance(monster, player) / 5.5, 0, 1);
@@ -1088,8 +1334,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       button.setPointerCapture(event.pointerId);
-      if (code === "KeyE") interact();
-      else if (code === "KeyF") toggleFlashlight();
+      if (code === "KeyE") {
+        interact();
+        keys.add(code);
+      } else if (code === "KeyF") toggleFlashlight();
       else keys.add(code);
     });
     const release = () => keys.delete(code);
