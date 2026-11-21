@@ -158,6 +158,42 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       colliders.push({ id, minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
     }
 
+    function spawnWindow(x, y, z, width, height, facing) {
+      if (facing === "north") {
+        box(width, height, 0.02, x, y, z + 0.01, materials.window);
+        box(width + 0.16, 0.08, 0.08, x, y + height * 0.5 + 0.04, z + 0.04, materials.trim);
+        box(width + 0.22, 0.09, 0.16, x, y - height * 0.5 - 0.045, z + 0.08, materials.trim);
+        box(0.08, height, 0.08, x - width * 0.5 - 0.04, y, z + 0.04, materials.trim);
+        box(0.08, height, 0.08, x + width * 0.5 + 0.04, y, z + 0.04, materials.trim);
+        box(0.05, height, 0.05, x, y, z + 0.025, materials.trim);
+        box(width, 0.05, 0.05, x, y, z + 0.025, materials.trim);
+      } else if (facing === "south") {
+        box(width, height, 0.02, x, y, z - 0.01, materials.window);
+        box(width + 0.16, 0.08, 0.08, x, y + height * 0.5 + 0.04, z - 0.04, materials.trim);
+        box(width + 0.22, 0.09, 0.16, x, y - height * 0.5 - 0.045, z - 0.08, materials.trim);
+        box(0.08, height, 0.08, x - width * 0.5 - 0.04, y, z - 0.04, materials.trim);
+        box(0.08, height, 0.08, x + width * 0.5 + 0.04, y, z - 0.04, materials.trim);
+        box(0.05, height, 0.05, x, y, z - 0.025, materials.trim);
+        box(width, 0.05, 0.05, x, y, z - 0.025, materials.trim);
+      } else if (facing === "west") {
+        box(0.02, height, width, x + 0.01, y, z, materials.window);
+        box(0.08, 0.08, width + 0.16, x + 0.04, y + height * 0.5 + 0.04, z, materials.trim);
+        box(0.16, 0.09, width + 0.22, x + 0.08, y - height * 0.5 - 0.045, z, materials.trim);
+        box(0.08, height, 0.08, x + 0.04, y, z - width * 0.5 - 0.04, materials.trim);
+        box(0.08, height, 0.08, x + 0.04, y, z + width * 0.5 + 0.04, materials.trim);
+        box(0.05, height, 0.05, x + 0.025, y, z, materials.trim);
+        box(0.05, 0.05, width, x + 0.025, y, z, materials.trim);
+      } else if (facing === "east") {
+        box(0.02, height, width, x - 0.01, y, z, materials.window);
+        box(0.08, 0.08, width + 0.16, x - 0.04, y + height * 0.5 + 0.04, z, materials.trim);
+        box(0.16, 0.09, width + 0.22, x - 0.08, y - height * 0.5 - 0.045, z, materials.trim);
+        box(0.08, height, 0.08, x - 0.04, y, z - width * 0.5 - 0.04, materials.trim);
+        box(0.08, height, 0.08, x - 0.04, y, z + width * 0.5 + 0.04, materials.trim);
+        box(0.05, height, 0.05, x - 0.025, y, z, materials.trim);
+        box(0.05, 0.05, width, x - 0.025, y, z, materials.trim);
+      }
+    }
+
     // Bedroom 1 (Room 07)
     box(12, 0.14, 8, 0, -0.08, 0, materials.floor);
     for (let x = -5.5; x < 5.8; x += 0.5) {
@@ -173,6 +209,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(0.16, 3.5, 3.25, 6.08, 1.75, 2.375, materials.wall);
     colliders.push({ id: "b1w4b", minX: 6, maxX: 6.16, minZ: 0.75, maxZ: 4 });
     box(0.16, 1.1, 1.5, 6.08, 2.95, 0, materials.wall);
+    // Bedroom door frame
+    box(0.26, 2.5, 0.16, 6.08, 1.25, -0.83, materials.trim);
+    box(0.26, 2.5, 0.16, 6.08, 1.25, 0.83, materials.trim);
+    box(0.28, 0.16, 1.82, 6.08, 2.48, 0.0, materials.trim);
 
     box(11.8, 0.16, 0.08, 0, 0.12, -3.88, materials.trim);
     box(11.8, 0.16, 0.08, 0, 0.12, 3.88, materials.trim);
@@ -228,9 +268,8 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(0.9, 0.04, 0.48, 12.3, 0.93, -9.48, materials.metal);
     box(0.06, 0.34, 0.06, 12.3, 1.08, -9.72, materials.metal);
     box(5.2, 0.72, 0.34, 13.1, 2.2, -9.82, materials.wood);
-    box(1.7, 1.1, 0.04, 12.3, 2.08, -10.06, materials.window);
-    box(1.86, 0.07, 0.1, 12.3, 2.66, -10, materials.trim);
-    box(1.86, 0.07, 0.1, 12.3, 1.5, -10, materials.trim);
+    // Kitchen north window
+    spawnWindow(12.3, 2.08, -10.08, 1.7, 1.1, "north");
     // Fridge
     box(1, 1.9, 0.9, 19.5, 0.95, -7.2, materials.metal);
     colliders.push({ id: "fridge", minX: 19, maxX: 20, minZ: -7.65, maxZ: -6.75 });
@@ -239,9 +278,16 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(2.2, 0.1, 1.2, 14.2, 0.78, -4, materials.wood);
     colliders.push({ id: "kitchenTable", minX: 13.1, maxX: 15.3, minZ: -4.6, maxZ: -3.4 });
     [[13.3, -4.42], [15.1, -4.42], [13.3, -3.58], [15.1, -3.58]].forEach(([x, z]) => box(0.12, 0.76, 0.12, x, 0.39, z, materials.woodDark));
-    [[13.5, -2.98], [15, -2.98], [13.5, -4.98], [15, -4.98]].forEach(([x, z]) => {
-      box(0.42, 0.06, 0.42, x, 0.45, z, materials.woodDark);
-      box(0.42, 0.06, 0.1, x, 0.85, z + (z < -4 ? -0.18 : 0.18), materials.woodDark);
+    [[13.5, -2.98, 1], [15, -2.98, 1], [13.5, -4.98, -1], [15, -4.98, -1]].forEach(([x, z, fz]) => {
+      box(0.44, 0.05, 0.44, x, 0.45, z, materials.woodDark);
+      [[x - 0.17, z - 0.17], [x + 0.17, z - 0.17], [x - 0.17, z + 0.17], [x + 0.17, z + 0.17]].forEach(([lx, lz]) => {
+        box(0.045, 0.43, 0.045, lx, 0.225, lz, materials.woodDark);
+      });
+      [[x - 0.17, z - 0.18 * fz], [x + 0.17, z - 0.18 * fz]].forEach(([bx, bz]) => {
+        box(0.045, 0.5, 0.045, bx, 0.7, bz, materials.woodDark);
+      });
+      box(0.42, 0.07, 0.045, x, 0.92, z - 0.18 * fz, materials.woodDark);
+      box(0.36, 0.05, 0.035, x, 0.73, z - 0.18 * fz, materials.woodDark);
     });
     const plate = box(0.5, 0.04, 0.5, 15.1, 0.85, -4, materials.paper);
     plate.rotation.y = 0.2;
@@ -302,10 +348,8 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(0.12, 0.9, 0.85, 12.1, 0.72, 2.6, materials.blanket);
     colliders.push({ id: "armchair", minX: 12.05, maxX: 13.1, minZ: 2.15, maxZ: 3.05 });
     box(1.6, 0.02, 1.2, 14.5, 0.02, 4.6, materials.rug);
-    // Window on the east wall
-    box(0.04, 1.3, 1.8, 20, 2, 7.2, materials.window);
-    box(0.1, 0.07, 1.96, 20.02, 2.68, 7.2, materials.trim);
-    box(0.1, 0.07, 1.96, 20.02, 1.32, 7.2, materials.trim);
+    // Workroom east window
+    spawnWindow(20.0, 2.0, 7.2, 1.8, 1.3, "east");
 
     // Room lights
     const kitchenLight = new THREE.PointLight(0xd9c39a, 0.85, 9, 2);
@@ -324,31 +368,18 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     roomLights.desk = deskLight;
     roomLights.work = workLight;
 
-    box(2.15, 1.5, 0.04, 1.75, 2.05, -3.9, materials.window);
-    box(2.35, 0.09, 0.1, 1.75, 2.82, -3.84, materials.trim);
-    box(2.35, 0.09, 0.1, 1.75, 1.28, -3.84, materials.trim);
-    box(0.09, 1.6, 0.1, 0.62, 2.05, -3.84, materials.trim);
-    box(0.09, 1.6, 0.1, 2.88, 2.05, -3.84, materials.trim);
-    box(0.06, 1.5, 0.08, 1.75, 2.05, -3.81, materials.trim);
-    box(2.15, 0.06, 0.08, 1.75, 2.05, -3.81, materials.trim);
+    // Bedroom north window
+    spawnWindow(1.75, 2.05, -4.0, 2.15, 1.5, "north");
 
     // Additional perimeter windows
     // Bedroom west window
-    box(0.04, 1.5, 2.0, -6.04, 2.0, 1.5, materials.window);
-    box(0.1, 0.09, 2.2, -6.04, 2.78, 1.5, materials.trim);
-    box(0.1, 0.09, 2.2, -6.04, 1.22, 1.5, materials.trim);
+    spawnWindow(-6.0, 2.0, 1.5, 1.8, 1.5, "west");
     // Corridor north window
-    box(1.8, 1.6, 0.04, 8.08, 2.05, -10.12, materials.window);
-    box(2.0, 0.09, 0.1, 8.08, 2.85, -10.12, materials.trim);
-    box(2.0, 0.09, 0.1, 8.08, 1.25, -10.12, materials.trim);
+    spawnWindow(8.08, 2.05, -10.08, 1.8, 1.5, "north");
     // Kitchen east window
-    box(0.04, 1.4, 1.8, 20.04, 2.0, -4.5, materials.window);
-    box(0.1, 0.09, 2.0, 20.04, 2.7, -4.5, materials.trim);
-    box(0.1, 0.09, 2.0, 20.04, 1.3, -4.5, materials.trim);
-    // Workroom south window
-    box(1.8, 1.4, 0.04, 15.08, 2.0, 10.12, materials.window);
-    box(2.0, 0.09, 0.1, 15.08, 2.7, 10.12, materials.trim);
-    box(2.0, 0.09, 0.1, 15.08, 1.3, 10.12, materials.trim);
+    spawnWindow(20.0, 2.0, -4.5, 1.8, 1.4, "east");
+    // Workroom south window (placed away from bookshelves at x: 13..16.2)
+    spawnWindow(17.65, 2.0, 10.08, 1.6, 1.4, "south");
 
     box(3.1, 0.22, 2.05, -3.6, 0.42, -2.3, materials.woodDark);
     colliders.push({ id: "bed", minX: -5.15, maxX: -2.05, minZ: -3.35, maxZ: -1.25 });
@@ -360,9 +391,16 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       [-3.1, -1.5].forEach((z) => box(0.12, 0.42, 0.12, x, 0.21, z, materials.woodDark));
     });
 
-    // Bedside nightstand
+    // Bedside nightstand & vintage radio receiver
     box(0.65, 0.6, 0.65, -1.8, 0.3, -3.2, materials.woodDark);
     colliders.push({ id: "nightstand", minX: -2.15, maxX: -1.45, minZ: -3.55, maxZ: -2.85 });
+    box(0.42, 0.24, 0.2, -1.8, 0.72, -3.2, materials.woodDark);
+    box(0.38, 0.2, 0.02, -1.8, 0.72, -3.09, materials.paper);
+    box(0.18, 0.16, 0.025, -1.89, 0.72, -3.085, materials.black);
+    box(0.14, 0.07, 0.025, -1.7, 0.76, -3.085, materials.screen);
+    box(0.04, 0.04, 0.03, -1.74, 0.66, -3.08, materials.metal);
+    box(0.04, 0.04, 0.03, -1.66, 0.66, -3.08, materials.metal);
+    box(0.015, 0.35, 0.015, -1.96, 0.98, -3.22, materials.metal);
 
     box(2.5, 0.13, 0.92, -0.2, 0.87, -3.2, materials.wood);
     colliders.push({ id: "desk", minX: -1.45, maxX: 1.05, minZ: -3.65, maxZ: -2.72 });
@@ -510,7 +548,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
         { x: 12.3, y: 1.15, z: -10.12, scale: 1.6, rotY: 0 },
         { x: 20.04, y: 1.15, z: -4.5, scale: 1.6, rotY: -Math.PI / 2 },
         { x: 20.04, y: 1.15, z: 7.2, scale: 1.6, rotY: -Math.PI / 2 },
-        { x: 15.08, y: 1.15, z: 10.12, scale: 1.6, rotY: Math.PI }
+        { x: 17.65, y: 1.15, z: 10.08, scale: 1.6, rotY: Math.PI }
       ],
       (root) => {
         root.traverse((child) => {
@@ -553,6 +591,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   box(0.06, 0.06, 0.24, 0.2, 1.15, 0.12, materials.metal, frontDoorPivot);
   box(0.16, 2.7, 0.3, 7.02, 1.35, 10.16, materials.trim);
   box(0.16, 2.7, 0.3, 8.98, 1.35, 10.16, materials.trim);
+  box(2.12, 0.16, 0.32, 8.0, 2.7, 10.16, materials.trim);
   // Тёмное «снаружи» за входной дверью, чтобы за ней не было пустоты.
   const porchBack = box(5.4, 3.5, 0.12, 8, 1.75, 11.3, materials.black);
   porchBack.castShadow = false;
@@ -814,6 +853,17 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       gasped: false,
       bob: 0
     };
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get("view");
+    if (view === "bedroom") {
+      player.x = -1.2; player.z = -0.5; player.yaw = 2.4; player.pitch = -0.15;
+    } else if (view === "kitchen") {
+      player.x = 12.0; player.z = -2.5; player.yaw = -0.7; player.pitch = -0.1;
+    } else if (view === "corridor") {
+      player.x = 8.0; player.z = 5.0; player.yaw = Math.PI; player.pitch = 0;
+    } else if (view === "workroom") {
+      player.x = 13.5; player.z = 4.0; player.yaw = -1.2; player.pitch = -0.1;
+    }
     monster = {
       x: 8,
       z: 10,
@@ -1781,5 +1831,8 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     rules: true,
     action: startGame
   });
+  if (new URLSearchParams(window.location.search).has("autoplay")) {
+    startGame();
+  }
   requestAnimationFrame(frame);
 })();

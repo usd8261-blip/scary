@@ -453,6 +453,12 @@ struct TaskMarker(usize);
 #[derive(Component)]
 struct TaskText;
 
+#[derive(Component)]
+struct FrontDoor;
+
+#[derive(Component)]
+struct BedroomDoor;
+
 struct EmbeddedAssetsPlugin;
 
 impl Plugin for EmbeddedAssetsPlugin {
@@ -503,6 +509,7 @@ fn main() {
                     update_player,
                     update_monster,
                     update_monster_visual,
+                    update_doors,
                     update_camera,
                     update_flashlight,
                     update_ui_visibility,
@@ -982,6 +989,64 @@ fn setup(
         });
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WindowFacing {
+    North,
+    South,
+    East,
+    West,
+}
+
+fn spawn_window(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    mat_window: Handle<StandardMaterial>,
+    mat_frame: Handle<StandardMaterial>,
+    pos: Vec3,
+    width: f32,
+    height: f32,
+    facing: WindowFacing,
+) {
+    match facing {
+        WindowFacing::North => {
+            spawn_box_mat(commands, meshes, mat_window, Vec3::new(width, height, 0.02), Vec3::new(pos.x, pos.y, pos.z + 0.01));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(width + 0.16, 0.08, 0.08), Vec3::new(pos.x, pos.y + height * 0.5 + 0.04, pos.z + 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(width + 0.22, 0.09, 0.16), Vec3::new(pos.x, pos.y - height * 0.5 - 0.045, pos.z + 0.08));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x - width * 0.5 - 0.04, pos.y, pos.z + 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x + width * 0.5 + 0.04, pos.y, pos.z + 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.05, height, 0.05), Vec3::new(pos.x, pos.y, pos.z + 0.025));
+            spawn_box_mat(commands, meshes, mat_frame, Vec3::new(width, 0.05, 0.05), Vec3::new(pos.x, pos.y, pos.z + 0.025));
+        }
+        WindowFacing::South => {
+            spawn_box_mat(commands, meshes, mat_window, Vec3::new(width, height, 0.02), Vec3::new(pos.x, pos.y, pos.z - 0.01));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(width + 0.16, 0.08, 0.08), Vec3::new(pos.x, pos.y + height * 0.5 + 0.04, pos.z - 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(width + 0.22, 0.09, 0.16), Vec3::new(pos.x, pos.y - height * 0.5 - 0.045, pos.z - 0.08));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x - width * 0.5 - 0.04, pos.y, pos.z - 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x + width * 0.5 + 0.04, pos.y, pos.z - 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.05, height, 0.05), Vec3::new(pos.x, pos.y, pos.z - 0.025));
+            spawn_box_mat(commands, meshes, mat_frame, Vec3::new(width, 0.05, 0.05), Vec3::new(pos.x, pos.y, pos.z - 0.025));
+        }
+        WindowFacing::West => {
+            spawn_box_mat(commands, meshes, mat_window, Vec3::new(0.02, height, width), Vec3::new(pos.x + 0.01, pos.y, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, 0.08, width + 0.16), Vec3::new(pos.x + 0.04, pos.y + height * 0.5 + 0.04, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.16, 0.09, width + 0.22), Vec3::new(pos.x + 0.08, pos.y - height * 0.5 - 0.045, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x + 0.04, pos.y, pos.z - width * 0.5 - 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x + 0.04, pos.y, pos.z + width * 0.5 + 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.05, height, 0.05), Vec3::new(pos.x + 0.025, pos.y, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame, Vec3::new(0.05, 0.05, width), Vec3::new(pos.x + 0.025, pos.y, pos.z));
+        }
+        WindowFacing::East => {
+            spawn_box_mat(commands, meshes, mat_window, Vec3::new(0.02, height, width), Vec3::new(pos.x - 0.01, pos.y, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, 0.08, width + 0.16), Vec3::new(pos.x - 0.04, pos.y + height * 0.5 + 0.04, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.16, 0.09, width + 0.22), Vec3::new(pos.x - 0.08, pos.y - height * 0.5 - 0.045, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x - 0.04, pos.y, pos.z - width * 0.5 - 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.08, height, 0.08), Vec3::new(pos.x - 0.04, pos.y, pos.z + width * 0.5 + 0.04));
+            spawn_box_mat(commands, meshes, mat_frame.clone(), Vec3::new(0.05, height, 0.05), Vec3::new(pos.x - 0.025, pos.y, pos.z));
+            spawn_box_mat(commands, meshes, mat_frame, Vec3::new(0.05, 0.05, width), Vec3::new(pos.x - 0.025, pos.y, pos.z));
+        }
+    }
+}
+
 fn build_room(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -1001,8 +1066,10 @@ fn build_room(
     let mat_rug = materials.add(Color::srgb(0.18, 0.22, 0.19));
     let mat_black = materials.add(Color::srgb(0.04, 0.06, 0.05));
     let mat_window = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.11, 0.22, 0.30),
-        emissive: Color::srgb(0.08, 0.16, 0.22).into(),
+        base_color: Color::srgb(0.18, 0.32, 0.50),
+        emissive: LinearRgba::new(0.38, 0.62, 0.92, 1.0),
+        perceptual_roughness: 0.12,
+        reflectance: 0.8,
         ..default()
     });
     let mat_screen = materials.add(StandardMaterial {
@@ -1041,6 +1108,42 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 3.250), Vec3::new(6.080, 1.750, -2.375));
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 3.250), Vec3::new(6.080, 1.750, 2.375));
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 1.100, 1.500), Vec3::new(6.080, 2.950, 0.000));
+    // Bedroom door frame
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.260, 2.500, 0.160), Vec3::new(6.080, 1.250, -0.830));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.260, 2.500, 0.160), Vec3::new(6.080, 1.250, 0.830));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.280, 0.160, 1.820), Vec3::new(6.080, 2.480, 0.000));
+    // Bedroom door entity
+    commands
+        .spawn((
+            SpatialBundle::from_transform(Transform::from_translation(Vec3::new(6.080, 0.000, -0.750))),
+            BedroomDoor,
+        ))
+        .with_children(|parent| {
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.120, 2.400, 1.500)),
+                material: mat_wood_dark.clone(),
+                transform: Transform::from_xyz(0.000, 1.200, 0.750),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.020, 0.950, 1.300)),
+                material: mat_wood.clone(),
+                transform: Transform::from_xyz(-0.060, 1.700, 0.750),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.020, 0.800, 1.300)),
+                material: mat_wood.clone(),
+                transform: Transform::from_xyz(-0.060, 0.650, 0.750),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.180, 0.060, 0.060)),
+                material: mat_metal.clone(),
+                transform: Transform::from_xyz(0.000, 1.150, 1.280),
+                ..default()
+            });
+        });
     spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(11.800, 0.160, 0.080), Vec3::new(0.000, 0.120, -3.880));
     spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(11.800, 0.160, 0.080), Vec3::new(0.000, 0.120, 3.880));
     spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.080, 0.160, 7.800), Vec3::new(-5.880, 0.120, 0.000));
@@ -1051,6 +1154,51 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(1.100, 3.500, 0.160), Vec3::new(6.550, 1.750, 10.160));
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(1.260, 3.500, 0.160), Vec3::new(9.530, 1.750, 10.160));
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(1.800, 0.850, 0.160), Vec3::new(8.000, 3.080, 10.160));
+    // Front entrance door frame
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.160, 2.700, 0.300), Vec3::new(7.020, 1.350, 10.160));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.160, 2.700, 0.300), Vec3::new(8.980, 1.350, 10.160));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.120, 0.160, 0.320), Vec3::new(8.000, 2.700, 10.160));
+    // Exterior porch outside front entrance door
+    spawn_box_mat(commands, meshes, mat_black.clone(), Vec3::new(5.400, 3.500, 0.120), Vec3::new(8.000, 1.750, 11.300));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(5.400, 0.140, 2.300), Vec3::new(8.000, -0.080, 11.150));
+    // Front entrance door entity
+    commands
+        .spawn((
+            SpatialBundle::from_transform(Transform::from_translation(Vec3::new(7.100, 0.000, 10.160))),
+            FrontDoor,
+        ))
+        .with_children(|parent| {
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(1.800, 2.450, 0.100)),
+                material: mat_wood_dark.clone(),
+                transform: Transform::from_xyz(0.900, 1.250, 0.000),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(1.600, 1.000, 0.020)),
+                material: mat_wood.clone(),
+                transform: Transform::from_xyz(0.900, 1.750, -0.050),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(1.600, 0.850, 0.020)),
+                material: mat_wood.clone(),
+                transform: Transform::from_xyz(0.900, 0.650, -0.050),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.060, 0.060, 0.240)),
+                material: mat_metal.clone(),
+                transform: Transform::from_xyz(0.200, 1.150, 0.000),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.080, 0.160, 0.120)),
+                material: mat_metal.clone(),
+                transform: Transform::from_xyz(0.200, 1.000, 0.000),
+                ..default()
+            });
+        });
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 4.080), Vec3::new(10.080, 1.750, -8.040));
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 8.800), Vec3::new(10.080, 1.750, 0.000));
     spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 4.080), Vec3::new(10.080, 1.750, 8.040));
@@ -1096,9 +1244,8 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.900, 0.040, 0.480), Vec3::new(12.300, 0.930, -9.480));
     spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.060, 0.340, 0.060), Vec3::new(12.300, 1.080, -9.720));
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(5.200, 0.720, 0.340), Vec3::new(13.100, 2.200, -9.820));
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(1.700, 1.100, 0.040), Vec3::new(12.300, 2.080, -10.060));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(1.860, 0.070, 0.100), Vec3::new(12.300, 2.660, -10.000));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(1.860, 0.070, 0.100), Vec3::new(12.300, 1.500, -10.000));
+    // Kitchen north window
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(12.300, 2.080, -10.080), 1.700, 1.100, WindowFacing::North);
     spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(1.000, 1.900, 0.900), Vec3::new(19.500, 0.950, -7.200));
     spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.040, 0.900, 0.040), Vec3::new(18.980, 1.200, -7.200));
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.200, 0.100, 1.200), Vec3::new(14.200, 0.780, -4.000));
@@ -1106,14 +1253,23 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(15.100, 0.390, -4.420));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(13.300, 0.390, -3.580));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(15.100, 0.390, -3.580));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(13.500, 0.450, -2.980));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(13.500, 0.850, -2.800));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(15.000, 0.450, -2.980));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(15.000, 0.850, -2.800));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(13.500, 0.450, -4.980));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(13.500, 0.850, -5.160));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(15.000, 0.450, -4.980));
-    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(15.000, 0.850, -5.160));
+    // Dining chairs with legs and backrests
+    for (cx, cz, fz) in [
+        (13.500f32, -2.980f32, 1.0f32),
+        (15.000f32, -2.980f32, 1.0f32),
+        (13.500f32, -4.980f32, -1.0f32),
+        (15.000f32, -4.980f32, -1.0f32),
+    ] {
+        spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.440, 0.050, 0.440), Vec3::new(cx, 0.450, cz));
+        for dx in [-0.170f32, 0.170f32] {
+            for dz in [-0.170f32, 0.170f32] {
+                spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.045, 0.430, 0.045), Vec3::new(cx + dx, 0.225, cz + dz));
+            }
+            spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.045, 0.500, 0.045), Vec3::new(cx + dx, 0.700, cz - 0.180 * fz));
+        }
+        spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.070, 0.045), Vec3::new(cx, 0.920, cz - 0.180 * fz));
+        spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.360, 0.050, 0.035), Vec3::new(cx, 0.730, cz - 0.180 * fz));
+    }
     spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.500, 0.040, 0.500), Vec3::new(15.100, 0.850, -4.000));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.850, 2.200, 1.500), Vec3::new(19.550, 1.100, -2.200));
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.000, 0.680), Vec3::new(19.100, 1.060, -2.560));
@@ -1168,16 +1324,10 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_blanket.clone(), Vec3::new(0.900, 0.120, 0.850), Vec3::new(12.600, 0.420, 2.600));
     spawn_box_mat(commands, meshes, mat_blanket.clone(), Vec3::new(0.120, 0.900, 0.850), Vec3::new(12.100, 0.720, 2.600));
     spawn_box_mat(commands, meshes, mat_rug.clone(), Vec3::new(1.600, 0.020, 1.200), Vec3::new(14.500, 0.020, 4.600));
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(0.040, 1.300, 1.800), Vec3::new(20.000, 2.000, 7.200));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.070, 1.960), Vec3::new(20.020, 2.680, 7.200));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.070, 1.960), Vec3::new(20.020, 1.320, 7.200));
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(2.150, 1.500, 0.040), Vec3::new(1.750, 2.050, -3.900));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.350, 0.090, 0.100), Vec3::new(1.750, 2.820, -3.840));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.350, 0.090, 0.100), Vec3::new(1.750, 1.280, -3.840));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.090, 1.600, 0.100), Vec3::new(0.620, 2.050, -3.840));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.090, 1.600, 0.100), Vec3::new(2.880, 2.050, -3.840));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.060, 1.500, 0.080), Vec3::new(1.750, 2.050, -3.810));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.150, 0.060, 0.080), Vec3::new(1.750, 2.050, -3.810));
+    // Workroom east window
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(20.000, 2.000, 7.200), 1.800, 1.300, WindowFacing::East);
+    // Bedroom north window
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(1.750, 2.050, -4.000), 2.150, 1.500, WindowFacing::North);
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(3.100, 0.220, 2.050), Vec3::new(-3.600, 0.420, -2.300));
     spawn_box_mat(commands, meshes, mat_mattress.clone(), Vec3::new(2.950, 0.300, 1.900), Vec3::new(-3.600, 0.660, -2.300));
     spawn_box_mat(commands, meshes, mat_blanket.clone(), Vec3::new(1.750, 0.060, 1.920), Vec3::new(-3.050, 0.840, -2.300));
@@ -1187,25 +1337,24 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-4.850, 0.210, -1.500));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-2.350, 0.210, -3.100));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-2.350, 0.210, -1.500));
-    // Bedside nightstand
+    // Bedside nightstand & vintage radio receiver
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.650, 0.600, 0.650), Vec3::new(-1.800, 0.300, -3.200));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.240, 0.200), Vec3::new(-1.800, 0.720, -3.200));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.380, 0.200, 0.020), Vec3::new(-1.800, 0.720, -3.090));
+    spawn_box_mat(commands, meshes, mat_black.clone(), Vec3::new(0.180, 0.160, 0.025), Vec3::new(-1.890, 0.720, -3.085));
+    spawn_box_mat(commands, meshes, mat_screen.clone(), Vec3::new(0.140, 0.070, 0.025), Vec3::new(-1.700, 0.760, -3.085));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.040, 0.040, 0.030), Vec3::new(-1.740, 0.660, -3.080));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.040, 0.040, 0.030), Vec3::new(-1.660, 0.660, -3.080));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.015, 0.350, 0.015), Vec3::new(-1.960, 0.980, -3.220));
     // Perimeter windows
     // Bedroom west window
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(0.040, 1.500, 2.000), Vec3::new(-6.040, 2.000, 1.500));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.200), Vec3::new(-6.040, 2.780, 1.500));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.200), Vec3::new(-6.040, 1.220, 1.500));
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(-6.000, 2.000, 1.500), 1.800, 1.500, WindowFacing::West);
     // Corridor north window
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(1.800, 1.600, 0.040), Vec3::new(8.080, 2.050, -10.120));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(8.080, 2.850, -10.120));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(8.080, 1.250, -10.120));
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(8.080, 2.050, -10.080), 1.800, 1.500, WindowFacing::North);
     // Kitchen east window
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(0.040, 1.400, 1.800), Vec3::new(20.040, 2.000, -4.500));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.000), Vec3::new(20.040, 2.700, -4.500));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.000), Vec3::new(20.040, 1.300, -4.500));
-    // Workroom south window
-    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(1.800, 1.400, 0.040), Vec3::new(15.080, 2.000, 10.120));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(15.080, 2.700, 10.120));
-    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(15.080, 1.300, 10.120));
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(20.000, 2.000, -4.500), 1.800, 1.400, WindowFacing::East);
+    // Workroom south window (placed away from bookshelves at x: 13..16.2)
+    spawn_window(commands, meshes, mat_window.clone(), mat_trim.clone(), Vec3::new(17.650, 2.000, 10.080), 1.600, 1.400, WindowFacing::South);
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.500, 0.130, 0.920), Vec3::new(-0.200, 0.870, -3.200));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(-1.280, 0.430, -3.530));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(-1.280, 0.430, -2.870));
@@ -2181,6 +2330,37 @@ fn update_monster_visual(
         } else {
             0.0
         };
+    }
+}
+
+fn update_doors(
+    time: Res<Time>,
+    state: Res<GameState>,
+    mut front_query: Query<&mut Transform, (With<FrontDoor>, Without<BedroomDoor>)>,
+    mut bedroom_query: Query<&mut Transform, (With<BedroomDoor>, Without<FrontDoor>)>,
+) {
+    let dt = time.delta_seconds();
+    let monster_inside = matches!(
+        state.monster.mode,
+        MonsterMode::Entering | MonsterMode::Hunting | MonsterMode::Chase | MonsterMode::Leaving
+    );
+    let front_door_open = monster_inside && (state.monster.position.z > 8.6 || state.monster.mode == MonsterMode::Leaving);
+    let target_front_rot = if front_door_open { 1.25f32 } else { 0.0f32 };
+
+    for mut transform in &mut front_query {
+        let current_y = transform.rotation.to_euler(EulerRot::YXZ).0;
+        let new_y = current_y + (target_front_rot - current_y) * (dt * 4.0).min(1.0);
+        transform.rotation = Quat::from_rotation_y(new_y);
+    }
+
+    let player_dist_to_bedroom_door = (Vec2::new(state.player.position.x, state.player.position.z) - Vec2::new(6.08, 0.0)).length();
+    let bedroom_door_open = monster_inside || (state.player.hidden.is_none() && player_dist_to_bedroom_door < 2.6);
+    let target_bedroom_rot = if bedroom_door_open { 1.15f32 } else { 0.0f32 };
+
+    for mut transform in &mut bedroom_query {
+        let current_y = transform.rotation.to_euler(EulerRot::YXZ).0;
+        let new_y = current_y + (target_bedroom_rot - current_y) * (dt * 5.0).min(1.0);
+        transform.rotation = Quat::from_rotation_y(new_y);
     }
 }
 
