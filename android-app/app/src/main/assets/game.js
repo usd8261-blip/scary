@@ -36,7 +36,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   const taskSpots = [
     { name: "починить окно", hint: "подойди к окну", x: 1.75, z: -2.85, lookX: 1.75, lookY: 2.05, lookZ: -3.84, hold: 3, bonus: 12 },
     { name: "проверить розетку", hint: "подойди к столу", x: 1.1, z: 2.3, lookX: 1.1, lookY: 0.95, lookZ: 1.2, hold: 2.5, bonus: 10 },
-    { name: "закрыть засов", hint: "подойди к двери спальни", x: 4.9, z: 0.9, lookX: 6.05, lookY: 1.2, lookZ: 0.35, hold: 2, bonus: 10 },
+    { name: "настроить радио", hint: "подойди к тумбочке у кровати", x: -1.75, z: -2.35, lookX: -1.8, lookY: 0.85, lookZ: -3.2, hold: 2.5, bonus: 10 },
     { name: "проверить входную дверь", hint: "подойди к входной двери", x: 8, z: 9.1, lookX: 8, lookY: 1.3, lookZ: 10, hold: 2.5, bonus: 12 },
     { name: "помыть посуду", hint: "подойди к мойке", x: 12.4, z: -8.5, lookX: 12.4, lookY: 1, lookZ: -9.45, hold: 4, bonus: 14 },
     { name: "закрыть холодильник", hint: "подойди к холодильнику", x: 18.3, z: -7.2, lookX: 19.4, lookY: 1.3, lookZ: -7.2, hold: 2, bonus: 10 },
@@ -195,6 +195,9 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(0.16, 0.85, 1.6, 10.08, 3.08, -5.2, materials.wall);
     box(0.16, 0.85, 1.6, 10.08, 3.08, 5.2, materials.wall);
     [-6, -4.4, 4.4, 6].forEach((z) => box(0.24, 2.7, 0.12, 10.08, 1.35, z, materials.trim));
+    // West walls of corridor north and south of bedroom doorway
+    wall(6.08, -7.12, 0.16, 6.08, "cw4a");
+    wall(6.08, 7.12, 0.16, 6.08, "cw4b");
     // Corridor closet — hiding place
     const closet = new THREE.Group();
     scene.add(closet);
@@ -329,6 +332,24 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(0.06, 1.5, 0.08, 1.75, 2.05, -3.81, materials.trim);
     box(2.15, 0.06, 0.08, 1.75, 2.05, -3.81, materials.trim);
 
+    // Additional perimeter windows
+    // Bedroom west window
+    box(0.04, 1.5, 2.0, -6.04, 2.0, 1.5, materials.window);
+    box(0.1, 0.09, 2.2, -6.04, 2.78, 1.5, materials.trim);
+    box(0.1, 0.09, 2.2, -6.04, 1.22, 1.5, materials.trim);
+    // Corridor north window
+    box(1.8, 1.6, 0.04, 8.08, 2.05, -10.12, materials.window);
+    box(2.0, 0.09, 0.1, 8.08, 2.85, -10.12, materials.trim);
+    box(2.0, 0.09, 0.1, 8.08, 1.25, -10.12, materials.trim);
+    // Kitchen east window
+    box(0.04, 1.4, 1.8, 20.04, 2.0, -4.5, materials.window);
+    box(0.1, 0.09, 2.0, 20.04, 2.7, -4.5, materials.trim);
+    box(0.1, 0.09, 2.0, 20.04, 1.3, -4.5, materials.trim);
+    // Workroom south window
+    box(1.8, 1.4, 0.04, 15.08, 2.0, 10.12, materials.window);
+    box(2.0, 0.09, 0.1, 15.08, 2.7, 10.12, materials.trim);
+    box(2.0, 0.09, 0.1, 15.08, 1.3, 10.12, materials.trim);
+
     box(3.1, 0.22, 2.05, -3.6, 0.42, -2.3, materials.woodDark);
     colliders.push({ id: "bed", minX: -5.15, maxX: -2.05, minZ: -3.35, maxZ: -1.25 });
     box(2.95, 0.3, 1.9, -3.6, 0.66, -2.3, materials.mattress);
@@ -338,6 +359,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     [-4.85, -2.35].forEach((x) => {
       [-3.1, -1.5].forEach((z) => box(0.12, 0.42, 0.12, x, 0.21, z, materials.woodDark));
     });
+
+    // Bedside nightstand
+    box(0.65, 0.6, 0.65, -1.8, 0.3, -3.2, materials.woodDark);
+    colliders.push({ id: "nightstand", minX: -2.15, maxX: -1.45, minZ: -3.55, maxZ: -2.85 });
 
     box(2.5, 0.13, 0.92, -0.2, 0.87, -3.2, materials.wood);
     colliders.push({ id: "desk", minX: -1.45, maxX: 1.05, minZ: -3.65, maxZ: -2.72 });
@@ -378,6 +403,133 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
 
   buildRoom();
   buildNavigation();
+  loadFurnitureModels();
+
+  function loadFurnitureModels() {
+    const loader = new GLTFLoader();
+
+    function spawn(url, instances, customize) {
+      loader.load(
+        url,
+        (gltf) => {
+          const root = gltf.scene;
+          root.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.material) {
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach((m) => {
+                  m.roughness = Math.max(0.65, m.roughness || 0.8);
+                });
+              }
+            }
+          });
+          if (customize) customize(root);
+
+          const box3 = new THREE.Box3().setFromObject(root);
+          const center = new THREE.Vector3();
+          box3.getCenter(center);
+          const bottomY = box3.min.y;
+
+          for (let i = 0; i < instances.length; i += 1) {
+            const inst = instances[i];
+            const group = new THREE.Group();
+            const clone = root.clone(true);
+            clone.position.set(-center.x, -bottomY, -center.z);
+            group.add(clone);
+            if (inst.scale) group.scale.setScalar(inst.scale);
+            if (inst.scaleX || inst.scaleY || inst.scaleZ) {
+              group.scale.set(
+                inst.scaleX || inst.scale || 1,
+                inst.scaleY || inst.scale || 1,
+                inst.scaleZ || inst.scale || 1
+              );
+            }
+            if (inst.rotY) group.rotation.y = inst.rotY;
+            if (inst.rotX) group.rotation.x = inst.rotX;
+            if (inst.rotZ) group.rotation.z = inst.rotZ;
+            group.position.set(inst.x || 0, inst.y || 0, inst.z || 0);
+            scene.add(group);
+          }
+        },
+        undefined,
+        (err) => {
+          console.warn("Could not load model:", url, err);
+        }
+      );
+    }
+
+    // Bedroom double bed
+    spawn("models/bedDouble.glb", [
+      { x: -3.6, y: 0, z: -2.3, scale: 1.7, rotY: -Math.PI / 2 }
+    ]);
+
+    // Bedroom bedside nightstand
+    spawn("models/cabinetBedDrawer.glb", [
+      { x: -1.8, y: 0, z: -3.2, scale: 2.2, rotY: 0 }
+    ]);
+
+    // Radio on the bedside nightstand
+    spawn("models/radio.glb", [
+      { x: -1.8, y: 0.58, z: -3.2, scale: 1.6, rotY: 0 }
+    ]);
+
+    // Dining table in kitchen
+    spawn("models/table.glb", [
+      { x: 14.2, y: 0, z: -4.0, scale: 2.4, rotY: 0 }
+    ]);
+
+    // Dining chairs around the kitchen table
+    spawn("models/chair.glb", [
+      { x: 13.6, y: 0, z: -3.2, scale: 1.8, rotY: 0 },
+      { x: 14.8, y: 0, z: -3.2, scale: 1.8, rotY: 0 },
+      { x: 13.6, y: 0, z: -4.8, scale: 1.8, rotY: Math.PI },
+      { x: 14.8, y: 0, z: -4.8, scale: 1.8, rotY: Math.PI }
+    ]);
+
+    // Desk chairs: bedroom study desk and workroom computer desk
+    spawn("models/chairDesk.glb", [
+      { x: -0.15, y: 0, z: -2.4, scale: 1.9, rotY: 0 },
+      { x: 18.0, y: 0, z: 5.0, scale: 1.9, rotY: -Math.PI / 2 }
+    ]);
+
+    // Bookcases in workroom
+    spawn("models/bookcaseOpen.glb", [
+      { x: 13.6, y: 0, z: 9.8, scale: 2.4, rotY: Math.PI },
+      { x: 15.2, y: 0, z: 9.8, scale: 2.4, rotY: Math.PI }
+    ]);
+
+    // Windows with glass tint
+    spawn(
+      "models/wallWindow.glb",
+      [
+        { x: 1.75, y: 1.15, z: -4.02, scale: 1.6, rotY: 0 },
+        { x: -6.04, y: 1.15, z: 1.5, scale: 1.6, rotY: Math.PI / 2 },
+        { x: 8.08, y: 1.15, z: -10.12, scale: 1.6, rotY: 0 },
+        { x: 12.3, y: 1.15, z: -10.12, scale: 1.6, rotY: 0 },
+        { x: 20.04, y: 1.15, z: -4.5, scale: 1.6, rotY: -Math.PI / 2 },
+        { x: 20.04, y: 1.15, z: 7.2, scale: 1.6, rotY: -Math.PI / 2 },
+        { x: 15.08, y: 1.15, z: 10.12, scale: 1.6, rotY: Math.PI }
+      ],
+      (root) => {
+        root.traverse((child) => {
+          if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((m) => {
+              if (m.name === "glass") {
+                m.transparent = true;
+                m.opacity = 0.55;
+                m.color.setHex(0x304654);
+                m.emissive.setHex(0x182c3a);
+                m.emissiveIntensity = 0.7;
+              }
+            });
+          }
+        });
+      }
+    );
+  }
 
   const wardrobeDoors = new THREE.Group();
   scene.add(wardrobeDoors);

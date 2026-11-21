@@ -11,7 +11,7 @@ const ROOM_MAX_X: f32 = 20.5;
 const ROOM_MIN_Z: f32 = -10.5;
 const ROOM_MAX_Z: f32 = 10.5;
 
-const COLLIDERS: [RectCollider; 30] = [
+const COLLIDERS: [RectCollider; 33] = [
     // Bedroom 1
     RectCollider { min_x: -6.16, max_x: -6.0, min_z: -4.0, max_z: 4.0 }, // b1w1
     RectCollider { min_x: -6.0, max_x: 6.0, min_z: -4.16, max_z: -4.0 }, // b1w2
@@ -25,6 +25,8 @@ const COLLIDERS: [RectCollider; 30] = [
     RectCollider { min_x: 10.0, max_x: 10.16, min_z: -10.08, max_z: -6.0 }, // cw3a
     RectCollider { min_x: 10.0, max_x: 10.16, min_z: -4.4, max_z: 4.4 }, // cw3b
     RectCollider { min_x: 10.0, max_x: 10.16, min_z: 6.0, max_z: 10.08 }, // cw3c
+    RectCollider { min_x: 6.0, max_x: 6.16, min_z: -10.16, max_z: -4.08 }, // cw4a
+    RectCollider { min_x: 6.0, max_x: 6.16, min_z: 4.08, max_z: 10.16 }, // cw4b
     RectCollider { min_x: 6.17, max_x: 6.73, min_z: 6.17, max_z: 7.43 }, // closet
     // Kitchen
     RectCollider { min_x: 10.0, max_x: 20.16, min_z: -10.24, max_z: -10.08 }, // kw1
@@ -43,6 +45,7 @@ const COLLIDERS: [RectCollider; 30] = [
     RectCollider { min_x: 12.05, max_x: 13.1, min_z: 2.15, max_z: 3.05 }, // armchair
     // Bedroom furniture
     RectCollider { min_x: -5.15, max_x: -2.05, min_z: -3.35, max_z: -1.25 }, // bed
+    RectCollider { min_x: -2.15, max_x: -1.45, min_z: -3.55, max_z: -2.85 }, // nightstand
     RectCollider { min_x: -1.45, max_x: 1.05, min_z: -3.65, max_z: -2.72 }, // desk
     RectCollider { min_x: 3.85, max_x: 5.45, min_z: -3.5, max_z: -2.0 }, // wardrobe
     RectCollider { min_x: 0.05, max_x: 2.15, min_z: 0.55, max_z: 1.85 }, // table
@@ -125,11 +128,11 @@ const TASK_SPOTS: [TaskSpot; 10] = [
         time_bonus: 10.0,
     },
     TaskSpot {
-        name: "закрыть засов",
-        hint: "подойди к двери спальни",
-        position: Vec3::new(4.9, 0.0, 0.9),
-        look_at: Vec3::new(6.05, 1.2, 0.35),
-        hold_seconds: 2.0,
+        name: "настроить радио",
+        hint: "подойди к тумбочке у кровати",
+        position: Vec3::new(-1.75, 0.0, -2.35),
+        look_at: Vec3::new(-1.8, 0.85, -3.2),
+        hold_seconds: 2.5,
         time_bonus: 10.0,
     },
     TaskSpot {
@@ -1057,6 +1060,9 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, -4.400));
     spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, 4.400));
     spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, 6.000));
+    // Corridor west walls north and south of bedroom doorway
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 6.080), Vec3::new(6.080, 1.750, -7.120));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 6.080), Vec3::new(6.080, 1.750, 7.120));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.550, 2.300, 1.250), Vec3::new(6.450, 1.150, 6.800));
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.100, 0.600), Vec3::new(6.740, 1.120, 6.490));
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.100, 0.600), Vec3::new(6.740, 1.120, 7.110));
@@ -1181,6 +1187,25 @@ fn build_room(
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-4.850, 0.210, -1.500));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-2.350, 0.210, -3.100));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-2.350, 0.210, -1.500));
+    // Bedside nightstand
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.650, 0.600, 0.650), Vec3::new(-1.800, 0.300, -3.200));
+    // Perimeter windows
+    // Bedroom west window
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(0.040, 1.500, 2.000), Vec3::new(-6.040, 2.000, 1.500));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.200), Vec3::new(-6.040, 2.780, 1.500));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.200), Vec3::new(-6.040, 1.220, 1.500));
+    // Corridor north window
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(1.800, 1.600, 0.040), Vec3::new(8.080, 2.050, -10.120));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(8.080, 2.850, -10.120));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(8.080, 1.250, -10.120));
+    // Kitchen east window
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(0.040, 1.400, 1.800), Vec3::new(20.040, 2.000, -4.500));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.000), Vec3::new(20.040, 2.700, -4.500));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.090, 2.000), Vec3::new(20.040, 1.300, -4.500));
+    // Workroom south window
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(1.800, 1.400, 0.040), Vec3::new(15.080, 2.000, 10.120));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(15.080, 2.700, 10.120));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.000, 0.090, 0.100), Vec3::new(15.080, 1.300, 10.120));
     spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.500, 0.130, 0.920), Vec3::new(-0.200, 0.870, -3.200));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(-1.280, 0.430, -3.530));
     spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(-1.280, 0.430, -2.870));
