@@ -5,21 +5,51 @@ use bevy::{
     prelude::*,
 };
 
-const NIGHT_DURATION: f32 = 150.0;
-const ROOM_MIN_X: f32 = -5.65;
-const ROOM_MAX_X: f32 = 5.65;
-const ROOM_MIN_Z: f32 = -3.65;
-const ROOM_MAX_Z: f32 = 3.65;
+const NIGHT_DURATION: f32 = 210.0;
+const ROOM_MIN_X: f32 = -6.5;
+const ROOM_MAX_X: f32 = 20.5;
+const ROOM_MIN_Z: f32 = -10.5;
+const ROOM_MAX_Z: f32 = 10.5;
 
-const COLLIDERS: [RectCollider; 5] = [
-    RectCollider { min_x: -5.15, max_x: -2.05, min_z: -3.35, max_z: -1.25 },
-    RectCollider { min_x: -1.45, max_x: 1.05, min_z: -3.65, max_z: -2.72 },
-    RectCollider { min_x: 3.85, max_x: 5.45, min_z: -3.50, max_z: -2.00 },
-    RectCollider { min_x: 0.05, max_x: 2.15, min_z: 0.55, max_z: 1.85 },
-    RectCollider { min_x: -5.25, max_x: -4.15, min_z: 2.15, max_z: 3.25 },
+const COLLIDERS: [RectCollider; 30] = [
+    // Bedroom 1
+    RectCollider { min_x: -6.16, max_x: -6.0, min_z: -4.0, max_z: 4.0 }, // b1w1
+    RectCollider { min_x: -6.0, max_x: 6.0, min_z: -4.16, max_z: -4.0 }, // b1w2
+    RectCollider { min_x: -6.0, max_x: 6.0, min_z: 4.0, max_z: 4.16 }, // b1w3
+    RectCollider { min_x: 6.0, max_x: 6.16, min_z: -4.0, max_z: -0.75 }, // b1w4a
+    RectCollider { min_x: 6.0, max_x: 6.16, min_z: 0.75, max_z: 4.0 }, // b1w4b
+    // Corridor
+    RectCollider { min_x: 6.0, max_x: 10.16, min_z: -10.24, max_z: -10.08 }, // cw1
+    RectCollider { min_x: 6.0, max_x: 7.1, min_z: 10.08, max_z: 10.24 }, // cw2a
+    RectCollider { min_x: 8.9, max_x: 10.16, min_z: 10.08, max_z: 10.24 }, // cw2b
+    RectCollider { min_x: 10.0, max_x: 10.16, min_z: -10.08, max_z: -6.0 }, // cw3a
+    RectCollider { min_x: 10.0, max_x: 10.16, min_z: -4.4, max_z: 4.4 }, // cw3b
+    RectCollider { min_x: 10.0, max_x: 10.16, min_z: 6.0, max_z: 10.08 }, // cw3c
+    RectCollider { min_x: 6.17, max_x: 6.73, min_z: 6.17, max_z: 7.43 }, // closet
+    // Kitchen
+    RectCollider { min_x: 10.0, max_x: 20.16, min_z: -10.24, max_z: -10.08 }, // kw1
+    RectCollider { min_x: 20.0, max_x: 20.16, min_z: -10.24, max_z: 0.16 }, // kw2
+    RectCollider { min_x: 10.0, max_x: 20.16, min_z: 0.0, max_z: 0.16 }, // kw3
+    RectCollider { min_x: 10.4, max_x: 15.8, min_z: -9.84, max_z: -9.12 }, // counter
+    RectCollider { min_x: 19.0, max_x: 20.0, min_z: -7.65, max_z: -6.75 }, // fridge
+    RectCollider { min_x: 13.1, max_x: 15.3, min_z: -4.6, max_z: -3.4 }, // kitchenTable
+    RectCollider { min_x: 19.12, max_x: 19.98, min_z: -2.95, max_z: -1.45 }, // pantry
+    // Workroom
+    RectCollider { min_x: 10.0, max_x: 20.16, min_z: 10.08, max_z: 10.24 }, // ww1
+    RectCollider { min_x: 20.0, max_x: 20.16, min_z: -0.16, max_z: 10.24 }, // ww2
+    RectCollider { min_x: 17.4, max_x: 20.0, min_z: 4.5, max_z: 5.5 }, // desk2
+    RectCollider { min_x: 19.15, max_x: 19.85, min_z: 9.03, max_z: 9.67 }, // safe
+    RectCollider { min_x: 10.17, max_x: 10.72, min_z: 7.45, max_z: 8.95 }, // cabinet
+    RectCollider { min_x: 12.05, max_x: 13.1, min_z: 2.15, max_z: 3.05 }, // armchair
+    // Bedroom furniture
+    RectCollider { min_x: -5.15, max_x: -2.05, min_z: -3.35, max_z: -1.25 }, // bed
+    RectCollider { min_x: -1.45, max_x: 1.05, min_z: -3.65, max_z: -2.72 }, // desk
+    RectCollider { min_x: 3.85, max_x: 5.45, min_z: -3.5, max_z: -2.0 }, // wardrobe
+    RectCollider { min_x: 0.05, max_x: 2.15, min_z: 0.55, max_z: 1.85 }, // table
+    RectCollider { min_x: -5.25, max_x: -4.15, min_z: 2.15, max_z: 3.25 }, // boxes
 ];
 
-const HIDE_SPOTS: [HideSpot; 2] = [
+const HIDE_SPOTS: [HideSpot; 6] = [
     HideSpot {
         name: "под кроватью",
         position: Vec3::new(-3.55, 0.34, -2.15),
@@ -32,44 +62,131 @@ const HIDE_SPOTS: [HideSpot; 2] = [
         exit: Vec3::new(4.65, 0.0, -1.55),
         yaw: std::f32::consts::PI,
     },
+    HideSpot {
+        name: "в шкафу коридора",
+        position: Vec3::new(6.75, 1.45, 6.8),
+        exit: Vec3::new(7.6, 0.0, 6.8),
+        yaw: -std::f32::consts::FRAC_PI_2,
+    },
+    HideSpot {
+        name: "под стойкой",
+        position: Vec3::new(13.1, 0.7, -9.05),
+        exit: Vec3::new(13.1, 0.0, -8.4),
+        yaw: std::f32::consts::PI,
+    },
+    HideSpot {
+        name: "в кладовке",
+        position: Vec3::new(19.0, 1.4, -2.2),
+        exit: Vec3::new(18.4, 0.0, -2.2),
+        yaw: std::f32::consts::FRAC_PI_2,
+    },
+    HideSpot {
+        name: "в шкафу кабинета",
+        position: Vec3::new(10.78, 1.4, 8.2),
+        exit: Vec3::new(11.7, 0.0, 8.2),
+        yaw: -std::f32::consts::FRAC_PI_2,
+    },
 ];
 
-const PATROL_POINTS: [Vec3; 9] = [
-    Vec3::new(4.6, 0.0, 1.5),
-    Vec3::new(2.8, 0.0, -0.8),
-    Vec3::new(0.0, 0.0, -1.25),
-    Vec3::new(-2.2, 0.0, -0.4),
-    Vec3::new(-3.1, 0.0, 1.35),
-    Vec3::new(0.0, 0.0, 2.8),
-    Vec3::new(4.2, 0.0, 2.8),
-    Vec3::new(2.75, 0.0, -2.05),
-    Vec3::new(-3.2, 0.0, 3.1),
+const PATROL_POINTS: [Vec3; 12] = [
+    // bedroom
+    Vec3::new(-3.0, 0.0, 2.6),
+    Vec3::new(2.6, 0.0, 3.0),
+    Vec3::new(3.0, 0.0, 0.2),
+    // corridor
+    Vec3::new(8.0, 0.0, 0.5),
+    Vec3::new(8.0, 0.0, 8.2),
+    Vec3::new(8.0, 0.0, -8.6),
+    // kitchen
+    Vec3::new(12.6, 0.0, -8.2),
+    Vec3::new(15.2, 0.0, -5.6),
+    Vec3::new(17.5, 0.0, -2.0),
+    // workroom
+    Vec3::new(12.6, 0.0, 8.6),
+    Vec3::new(17.0, 0.0, 7.6),
+    Vec3::new(17.6, 0.0, 2.4),
 ];
 
-const TASK_SPOTS: [TaskSpot; 3] = [
+const TASK_SPOTS: [TaskSpot; 10] = [
     TaskSpot {
         name: "починить окно",
         hint: "подойди к окну",
-        position: Vec3::new(1.75, 0.0, -3.1),
-        look_at: Vec3::new(1.75, 1.6, -3.9),
+        position: Vec3::new(1.75, 0.0, -2.85),
+        look_at: Vec3::new(1.75, 2.05, -3.84),
         hold_seconds: 3.0,
-        time_bonus: 20.0,
+        time_bonus: 12.0,
     },
     TaskSpot {
         name: "проверить розетку",
-        hint: "подойди к тумбе",
-        position: Vec3::new(1.1, 0.0, 2.1),
-        look_at: Vec3::new(1.1, 0.8, 1.2),
+        hint: "подойди к столу",
+        position: Vec3::new(1.1, 0.0, 2.3),
+        look_at: Vec3::new(1.1, 0.95, 1.2),
         hold_seconds: 2.5,
-        time_bonus: 15.0,
+        time_bonus: 10.0,
     },
     TaskSpot {
         name: "закрыть засов",
-        hint: "подойди к двери",
-        position: Vec3::new(5.0, 0.0, 1.5),
-        look_at: Vec3::new(6.0, 1.2, 1.5),
+        hint: "подойди к двери спальни",
+        position: Vec3::new(4.9, 0.0, 0.9),
+        look_at: Vec3::new(6.05, 1.2, 0.35),
         hold_seconds: 2.0,
-        time_bonus: 15.0,
+        time_bonus: 10.0,
+    },
+    TaskSpot {
+        name: "проверить входную дверь",
+        hint: "подойди к входной двери",
+        position: Vec3::new(8.0, 0.0, 9.1),
+        look_at: Vec3::new(8.0, 1.3, 10.0),
+        hold_seconds: 2.5,
+        time_bonus: 12.0,
+    },
+    TaskSpot {
+        name: "помыть посуду",
+        hint: "подойди к мойке",
+        position: Vec3::new(12.4, 0.0, -8.5),
+        look_at: Vec3::new(12.4, 1.0, -9.45),
+        hold_seconds: 4.0,
+        time_bonus: 14.0,
+    },
+    TaskSpot {
+        name: "закрыть холодильник",
+        hint: "подойди к холодильнику",
+        position: Vec3::new(18.3, 0.0, -7.2),
+        look_at: Vec3::new(19.4, 1.3, -7.2),
+        hold_seconds: 2.0,
+        time_bonus: 10.0,
+    },
+    TaskSpot {
+        name: "вытереть стол",
+        hint: "подойди к обеденному столу",
+        position: Vec3::new(14.2, 0.0, -3.0),
+        look_at: Vec3::new(14.2, 0.85, -4.0),
+        hold_seconds: 3.0,
+        time_bonus: 12.0,
+    },
+    TaskSpot {
+        name: "выключить компьютер",
+        hint: "подойди к рабочему столу",
+        position: Vec3::new(17.0, 0.0, 5.0),
+        look_at: Vec3::new(19.6, 1.35, 5.0),
+        hold_seconds: 3.0,
+        time_bonus: 14.0,
+    },
+    TaskSpot {
+        name: "запереть сейф",
+        hint: "подойди к сейфу",
+        position: Vec3::new(18.4, 0.0, 9.0),
+        look_at: Vec3::new(19.5, 0.75, 9.35),
+        hold_seconds: 2.5,
+        time_bonus: 10.0,
+    },
+    TaskSpot {
+        name: "собрать бумаги",
+        hint: "подойди к полкам",
+        position: Vec3::new(14.4, 0.0, 9.0),
+        look_at: Vec3::new(14.4, 1.0, 9.6),
+        hold_seconds: 3.5,
+        time_bonus: 12.0,
     },
 ];
 
@@ -137,8 +254,8 @@ struct PlayerState {
 impl Default for PlayerState {
     fn default() -> Self {
         Self {
-            position: Vec3::new(0.0, 0.0, 2.2),
-            yaw: 0.0,
+            position: Vec3::new(0.0, 0.0, 2.6),
+            yaw: -std::f32::consts::FRAC_PI_2,
             pitch: 0.0,
             stamina: 100.0,
             breath: 100.0,
@@ -171,16 +288,17 @@ struct MonsterState {
     path_index: usize,
     path_target: Option<Vec3>,
     repath_timer: f32,
+    room: usize,
     anim: f32,
 }
 
 impl Default for MonsterState {
     fn default() -> Self {
         Self {
-            position: Vec3::new(5.18, 0.0, 1.5),
+            position: Vec3::new(8.0, 0.0, 10.0),
             facing: std::f32::consts::PI,
             mode: MonsterMode::Away,
-            timer: 9.0,
+            timer: 10.0,
             awareness: 0.0,
             exposure: 0.0,
             target: None,
@@ -192,6 +310,7 @@ impl Default for MonsterState {
             path_index: 0,
             path_target: None,
             repath_timer: 0.0,
+            room: 0,
             anim: 0.0,
         }
     }
@@ -210,7 +329,7 @@ struct GameState {
     end_text: String,
     random_seed: u32,
     step_timer: f32,
-    tasks_done: [bool; 3],
+    tasks_done: [bool; 10],
     task_progress: f32,
     active_task: Option<usize>,
 }
@@ -229,7 +348,7 @@ impl Default for GameState {
             end_text: String::new(),
             random_seed: 123_456_789,
             step_timer: 0.0,
-            tasks_done: [false; 3],
+            tasks_done: [false; 10],
             task_progress: 0.0,
             active_task: None,
         }
@@ -465,15 +584,59 @@ fn setup(
         ..default()
     });
 
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            color: Color::srgb_u8(217, 195, 154),
+            intensity: 750.0,
+            range: 9.0,
+            ..default()
+        },
+        transform: Transform::from_xyz(14.2, 2.7, -4.6),
+        ..default()
+    });
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            color: Color::srgb_u8(127, 209, 168),
+            intensity: 500.0,
+            range: 3.2,
+            ..default()
+        },
+        transform: Transform::from_xyz(19.2, 1.1, -7.2),
+        ..default()
+    });
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            color: Color::srgb_u8(240, 201, 138),
+            intensity: 600.0,
+            range: 4.5,
+            ..default()
+        },
+        transform: Transform::from_xyz(17.75, 1.25, 4.72),
+        ..default()
+    });
+
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            color: Color::srgb_u8(159, 183, 166),
+            intensity: 600.0,
+            range: 9.0,
+            ..default()
+        },
+        transform: Transform::from_xyz(15.4, 2.7, 6.4),
+        ..default()
+    });
+
     commands.spawn((
         PointLightBundle {
             point_light: PointLight {
-                color: Color::rgb(0.72, 0.18, 0.14),
+                color: Color::srgb_u8(181, 46, 36),
                 intensity: 0.0,
                 range: 3.5,
                 ..default()
             },
-            transform: Transform::from_xyz(5.45, 0.2, 1.5),
+            transform: Transform::from_xyz(8.0, 0.2, 10.0),
             ..default()
         },
         WarningLight,
@@ -821,51 +984,244 @@ fn build_room(
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<StandardMaterial>,
 ) {
-    spawn_box(commands, meshes, materials, Vec3::new(12.0, 0.14, 8.0), Vec3::new(0.0, -0.08, 0.0), Color::rgb(0.14, 0.16, 0.14));
-    for i in 0..20 {
-        let x = -5.5 + i as f32 * 0.58;
-        let color = if i % 2 == 0 { Color::rgb(0.13, 0.15, 0.13) } else { Color::rgb(0.11, 0.13, 0.11) };
-        spawn_box(commands, meshes, materials, Vec3::new(0.55, 0.012, 7.85), Vec3::new(x, 0.003, 0.0), color);
-    }
+    let mat_floor = materials.add(Color::srgb(0.14, 0.16, 0.14));
+    let mat_floor_alt = materials.add(Color::srgb(0.12, 0.14, 0.12));
+    let mat_wall = materials.add(Color::srgb(0.25, 0.27, 0.25));
+    let mat_trim = materials.add(Color::srgb(0.12, 0.14, 0.12));
+    let mat_wood = materials.add(Color::srgb(0.27, 0.25, 0.20));
+    let mat_wood_dark = materials.add(Color::srgb(0.18, 0.16, 0.13));
+    let mat_metal = materials.add(Color::srgb(0.42, 0.44, 0.40));
+    let mat_mattress = materials.add(Color::srgb(0.44, 0.45, 0.41));
+    let mat_blanket = materials.add(Color::srgb(0.22, 0.30, 0.26));
+    let mat_pillow = materials.add(Color::srgb(0.65, 0.63, 0.55));
+    let mat_paper = materials.add(Color::srgb(0.68, 0.66, 0.57));
+    let mat_rug = materials.add(Color::srgb(0.18, 0.22, 0.19));
+    let mat_black = materials.add(Color::srgb(0.04, 0.06, 0.05));
+    let mat_window = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.11, 0.22, 0.30),
+        emissive: Color::srgb(0.08, 0.16, 0.22).into(),
+        ..default()
+    });
+    let mat_screen = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.12, 0.32, 0.22),
+        emissive: Color::srgb(0.15, 0.35, 0.25).into(),
+        ..default()
+    });
 
-    spawn_box(commands, meshes, materials, Vec3::new(12.0, 3.5, 0.16), Vec3::new(0.0, 1.75, -4.0), Color::rgb(0.25, 0.27, 0.25));
-    spawn_box(commands, meshes, materials, Vec3::new(12.0, 3.5, 0.16), Vec3::new(0.0, 1.75, 4.0), Color::rgb(0.25, 0.27, 0.25));
-    spawn_box(commands, meshes, materials, Vec3::new(0.16, 3.5, 8.0), Vec3::new(-6.0, 1.75, 0.0), Color::rgb(0.25, 0.27, 0.25));
-    spawn_box(commands, meshes, materials, Vec3::new(0.16, 3.5, 4.75), Vec3::new(6.0, 1.75, -1.625), Color::rgb(0.25, 0.27, 0.25));
-    spawn_box(commands, meshes, materials, Vec3::new(0.16, 3.5, 1.75), Vec3::new(6.0, 1.75, 3.125), Color::rgb(0.25, 0.27, 0.25));
-    spawn_box(commands, meshes, materials, Vec3::new(0.16, 1.1, 1.5), Vec3::new(6.0, 2.95, 1.5), Color::rgb(0.25, 0.27, 0.25));
-
-    spawn_box(commands, meshes, materials, Vec3::new(3.4, 0.025, 2.1), Vec3::new(-0.5, 0.02, 0.45), Color::rgb(0.18, 0.22, 0.19));
-    spawn_box(commands, meshes, materials, Vec3::new(2.15, 1.5, 0.04), Vec3::new(1.75, 2.05, -3.9), Color::rgb(0.11, 0.22, 0.30));
-    spawn_box(commands, meshes, materials, Vec3::new(2.35, 0.09, 0.1), Vec3::new(1.75, 2.82, -3.84), Color::rgb(0.12, 0.14, 0.12));
-    spawn_box(commands, meshes, materials, Vec3::new(2.35, 0.09, 0.1), Vec3::new(1.75, 1.28, -3.84), Color::rgb(0.12, 0.14, 0.12));
-    spawn_box(commands, meshes, materials, Vec3::new(0.09, 1.6, 0.1), Vec3::new(0.62, 2.05, -3.84), Color::rgb(0.12, 0.14, 0.12));
-    spawn_box(commands, meshes, materials, Vec3::new(0.09, 1.6, 0.1), Vec3::new(2.88, 2.05, -3.84), Color::rgb(0.12, 0.14, 0.12));
-
-    spawn_box(commands, meshes, materials, Vec3::new(3.1, 0.22, 2.05), Vec3::new(-3.6, 0.42, -2.3), Color::rgb(0.18, 0.16, 0.13));
-    spawn_box(commands, meshes, materials, Vec3::new(2.95, 0.3, 1.9), Vec3::new(-3.6, 0.66, -2.3), Color::rgb(0.43, 0.44, 0.40));
-    spawn_box(commands, meshes, materials, Vec3::new(1.75, 0.06, 1.92), Vec3::new(-3.05, 0.84, -2.3), Color::rgb(0.20, 0.28, 0.24));
-    spawn_box(commands, meshes, materials, Vec3::new(0.72, 0.16, 1.1), Vec3::new(-4.55, 0.87, -2.3), Color::rgb(0.65, 0.63, 0.55));
-    spawn_box(commands, meshes, materials, Vec3::new(0.14, 1.55, 2.12), Vec3::new(-5.14, 0.95, -2.3), Color::rgb(0.27, 0.25, 0.20));
-
-    spawn_box(commands, meshes, materials, Vec3::new(2.5, 0.13, 0.92), Vec3::new(-0.2, 0.87, -3.2), Color::rgb(0.27, 0.25, 0.20));
-    spawn_box(commands, meshes, materials, Vec3::new(0.85, 0.55, 0.08), Vec3::new(-0.15, 1.28, -3.42), Color::rgb(0.04, 0.06, 0.05));
-    spawn_box(commands, meshes, materials, Vec3::new(0.72, 0.42, 0.025), Vec3::new(-0.15, 1.28, -3.36), Color::rgb(0.12, 0.32, 0.22));
-    spawn_box(commands, meshes, materials, Vec3::new(0.55, 0.015, 0.4), Vec3::new(-0.9, 0.95, -3.05), Color::rgb(0.64, 0.62, 0.52));
-
-    spawn_box(commands, meshes, materials, Vec3::new(0.12, 2.75, 1.45), Vec3::new(3.9, 1.38, -2.75), Color::rgb(0.21, 0.19, 0.15));
-    spawn_box(commands, meshes, materials, Vec3::new(0.12, 2.75, 1.45), Vec3::new(5.4, 1.38, -2.75), Color::rgb(0.21, 0.19, 0.15));
-    spawn_box(commands, meshes, materials, Vec3::new(1.5, 2.75, 0.1), Vec3::new(4.65, 1.38, -3.45), Color::rgb(0.21, 0.19, 0.15));
-    spawn_box(commands, meshes, materials, Vec3::new(1.5, 0.12, 1.45), Vec3::new(4.65, 2.7, -2.75), Color::rgb(0.28, 0.25, 0.20));
-    spawn_box(commands, meshes, materials, Vec3::new(0.71, 2.52, 0.08), Vec3::new(4.27, 1.39, -2.0), Color::rgb(0.28, 0.25, 0.20));
-    spawn_box(commands, meshes, materials, Vec3::new(0.71, 2.52, 0.08), Vec3::new(5.03, 1.39, -2.0), Color::rgb(0.28, 0.25, 0.20));
-
-    spawn_box(commands, meshes, materials, Vec3::new(2.05, 0.13, 1.3), Vec3::new(1.1, 0.8, 1.2), Color::rgb(0.25, 0.24, 0.19));
-    spawn_box(commands, meshes, materials, Vec3::new(0.46, 0.06, 0.46), Vec3::new(1.5, 0.91, 1.2), Color::rgb(0.44, 0.44, 0.39));
-    spawn_box(commands, meshes, materials, Vec3::new(1.05, 0.62, 0.95), Vec3::new(-4.7, 0.31, 2.75), Color::rgb(0.27, 0.24, 0.18));
-    spawn_box(commands, meshes, materials, Vec3::new(0.13, 2.4, 1.5), Vec3::new(5.92, 1.2, 1.5), Color::rgb(0.18, 0.20, 0.17));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(12.000, 0.140, 8.000), Vec3::new(0.000, -0.080, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-5.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-5.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-4.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-4.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-3.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-3.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-2.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-2.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-1.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-1.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(-0.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(0.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(0.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(1.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(1.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(2.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(2.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(3.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(3.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(4.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(4.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(5.000, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.480, 0.012, 7.850), Vec3::new(5.500, 0.003, 0.000));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 8.000), Vec3::new(-6.080, 1.750, 0.000));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(12.000, 3.500, 0.160), Vec3::new(0.000, 1.750, -4.080));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(12.000, 3.500, 0.160), Vec3::new(0.000, 1.750, 4.080));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 3.250), Vec3::new(6.080, 1.750, -2.375));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 3.250), Vec3::new(6.080, 1.750, 2.375));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 1.100, 1.500), Vec3::new(6.080, 2.950, 0.000));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(11.800, 0.160, 0.080), Vec3::new(0.000, 0.120, -3.880));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(11.800, 0.160, 0.080), Vec3::new(0.000, 0.120, 3.880));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.080, 0.160, 7.800), Vec3::new(-5.880, 0.120, 0.000));
+    spawn_box_mat(commands, meshes, mat_rug.clone(), Vec3::new(3.400, 0.025, 2.100), Vec3::new(-0.500, 0.020, 0.450));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(3.920, 0.140, 20.160), Vec3::new(8.080, -0.080, 0.000));
+    spawn_box_mat(commands, meshes, mat_rug.clone(), Vec3::new(1.500, 0.020, 14.000), Vec3::new(8.000, 0.015, 0.600));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(4.160, 3.500, 0.160), Vec3::new(8.080, 1.750, -10.160));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(1.100, 3.500, 0.160), Vec3::new(6.550, 1.750, 10.160));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(1.260, 3.500, 0.160), Vec3::new(9.530, 1.750, 10.160));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(1.800, 0.850, 0.160), Vec3::new(8.000, 3.080, 10.160));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 4.080), Vec3::new(10.080, 1.750, -8.040));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 8.800), Vec3::new(10.080, 1.750, 0.000));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 4.080), Vec3::new(10.080, 1.750, 8.040));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 0.850, 1.600), Vec3::new(10.080, 3.080, -5.200));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 0.850, 1.600), Vec3::new(10.080, 3.080, 5.200));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, -6.000));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, -4.400));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, 4.400));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.240, 2.700, 0.120), Vec3::new(10.080, 1.350, 6.000));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.550, 2.300, 1.250), Vec3::new(6.450, 1.150, 6.800));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.100, 0.600), Vec3::new(6.740, 1.120, 6.490));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.100, 0.600), Vec3::new(6.740, 1.120, 7.110));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.040, 0.300, 0.040), Vec3::new(6.770, 1.150, 6.720));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.060, 0.080, 1.400), Vec3::new(6.180, 1.850, 8.900));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.500, 0.100, 1.200), Vec3::new(6.450, 0.450, 8.900));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.080, 0.450, 0.080), Vec3::new(6.250, 0.230, 8.450));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.080, 0.450, 0.080), Vec3::new(6.250, 0.230, 9.350));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(10.000, 0.140, 10.200), Vec3::new(15.080, -0.080, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(10.600, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(11.200, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(11.800, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(12.400, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(13.000, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(13.600, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(14.200, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(14.800, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(15.400, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(16.000, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(16.600, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(17.200, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(17.800, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(18.400, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(19.000, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(0.560, 0.012, 9.900), Vec3::new(19.600, 0.004, -5.000));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(10.160, 3.500, 0.160), Vec3::new(15.080, 1.750, -10.160));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 10.400), Vec3::new(20.080, 1.750, -5.040));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(10.160, 3.500, 0.160), Vec3::new(15.080, 1.750, 0.080));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(5.400, 0.860, 0.720), Vec3::new(13.100, 0.430, -9.480));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(5.600, 0.080, 0.820), Vec3::new(13.100, 0.900, -9.480));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.900, 0.040, 0.480), Vec3::new(12.300, 0.930, -9.480));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.060, 0.340, 0.060), Vec3::new(12.300, 1.080, -9.720));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(5.200, 0.720, 0.340), Vec3::new(13.100, 2.200, -9.820));
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(1.700, 1.100, 0.040), Vec3::new(12.300, 2.080, -10.060));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(1.860, 0.070, 0.100), Vec3::new(12.300, 2.660, -10.000));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(1.860, 0.070, 0.100), Vec3::new(12.300, 1.500, -10.000));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(1.000, 1.900, 0.900), Vec3::new(19.500, 0.950, -7.200));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.040, 0.900, 0.040), Vec3::new(18.980, 1.200, -7.200));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.200, 0.100, 1.200), Vec3::new(14.200, 0.780, -4.000));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(13.300, 0.390, -4.420));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(15.100, 0.390, -4.420));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(13.300, 0.390, -3.580));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.760, 0.120), Vec3::new(15.100, 0.390, -3.580));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(13.500, 0.450, -2.980));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(13.500, 0.850, -2.800));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(15.000, 0.450, -2.980));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(15.000, 0.850, -2.800));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(13.500, 0.450, -4.980));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(13.500, 0.850, -5.160));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.420), Vec3::new(15.000, 0.450, -4.980));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.420, 0.060, 0.100), Vec3::new(15.000, 0.850, -5.160));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.500, 0.040, 0.500), Vec3::new(15.100, 0.850, -4.000));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.850, 2.200, 1.500), Vec3::new(19.550, 1.100, -2.200));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.000, 0.680), Vec3::new(19.100, 1.060, -2.560));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.000, 0.680), Vec3::new(19.100, 1.060, -1.840));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.040, 0.500, 0.040), Vec3::new(14.200, 2.900, -4.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(10.000, 0.140, 10.000), Vec3::new(15.080, -0.080, 5.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 0.700));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 1.400));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 2.100));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 2.800));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 3.500));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 4.200));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 4.900));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 5.600));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 6.300));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 7.000));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 7.700));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 8.400));
+    spawn_box_mat(commands, meshes, mat_floor.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 9.100));
+    spawn_box_mat(commands, meshes, mat_floor_alt.clone(), Vec3::new(9.800, 0.012, 0.660), Vec3::new(15.080, 0.004, 9.800));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(10.160, 3.500, 0.160), Vec3::new(15.080, 1.750, 10.160));
+    spawn_box_mat(commands, meshes, mat_wall.clone(), Vec3::new(0.160, 3.500, 10.400), Vec3::new(20.080, 1.750, 5.040));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.600, 0.120, 0.950), Vec3::new(18.700, 0.790, 5.000));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.760, 0.100), Vec3::new(17.500, 0.380, 4.620));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.760, 0.100), Vec3::new(19.900, 0.380, 4.620));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.760, 0.100), Vec3::new(17.500, 0.380, 5.380));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.760, 0.100), Vec3::new(19.900, 0.380, 5.380));
+    spawn_box_mat(commands, meshes, mat_black.clone(), Vec3::new(0.060, 0.620, 0.980), Vec3::new(19.820, 1.400, 5.000));
+    spawn_box_mat(commands, meshes, mat_screen.clone(), Vec3::new(0.020, 0.520, 0.860), Vec3::new(19.780, 1.400, 5.000));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.160, 0.240, 0.260), Vec3::new(19.860, 0.980, 5.000));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.500, 0.100, 0.500), Vec3::new(18.200, 0.500, 5.000));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.500, 0.550, 0.080), Vec3::new(18.200, 0.800, 5.240));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.500, 0.550, 0.080), Vec3::new(18.200, 0.800, 4.760));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.220, 0.040, 0.220), Vec3::new(17.750, 0.870, 4.720));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.050, 0.400, 0.050), Vec3::new(17.750, 1.070, 4.720));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.200, 0.140, 0.200), Vec3::new(17.750, 1.300, 4.720));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(3.200, 0.080, 0.420), Vec3::new(14.600, 1.000, 9.720));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(3.200, 0.080, 0.420), Vec3::new(14.600, 1.620, 9.720));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(3.200, 0.080, 0.420), Vec3::new(14.600, 2.240, 9.720));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.080, 2.400, 0.420), Vec3::new(13.000, 1.200, 9.720));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.080, 2.400, 0.420), Vec3::new(16.200, 1.200, 9.720));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.500, 0.160, 0.300), Vec3::new(13.900, 1.120, 9.700));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.420, 0.120, 0.280), Vec3::new(15.200, 1.740, 9.700));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.500, 0.200, 0.300), Vec3::new(14.600, 2.360, 9.700));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.700, 0.700, 0.650), Vec3::new(19.500, 0.350, 9.350));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.060, 0.200, 0.060), Vec3::new(19.140, 0.420, 9.350));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.550, 2.300, 1.500), Vec3::new(10.450, 1.150, 8.200));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.100, 0.680), Vec3::new(10.740, 1.120, 7.860));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.050, 2.100, 0.680), Vec3::new(10.740, 1.120, 8.540));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(2.400, 1.200, 0.050), Vec3::new(14.400, 1.900, 0.200));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(2.520, 0.060, 0.080), Vec3::new(14.400, 2.530, 0.200));
+    spawn_box_mat(commands, meshes, mat_blanket.clone(), Vec3::new(0.900, 0.120, 0.850), Vec3::new(12.600, 0.420, 2.600));
+    spawn_box_mat(commands, meshes, mat_blanket.clone(), Vec3::new(0.120, 0.900, 0.850), Vec3::new(12.100, 0.720, 2.600));
+    spawn_box_mat(commands, meshes, mat_rug.clone(), Vec3::new(1.600, 0.020, 1.200), Vec3::new(14.500, 0.020, 4.600));
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(0.040, 1.300, 1.800), Vec3::new(20.000, 2.000, 7.200));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.070, 1.960), Vec3::new(20.020, 2.680, 7.200));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.100, 0.070, 1.960), Vec3::new(20.020, 1.320, 7.200));
+    spawn_box_mat(commands, meshes, mat_window.clone(), Vec3::new(2.150, 1.500, 0.040), Vec3::new(1.750, 2.050, -3.900));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.350, 0.090, 0.100), Vec3::new(1.750, 2.820, -3.840));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.350, 0.090, 0.100), Vec3::new(1.750, 1.280, -3.840));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.090, 1.600, 0.100), Vec3::new(0.620, 2.050, -3.840));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.090, 1.600, 0.100), Vec3::new(2.880, 2.050, -3.840));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(0.060, 1.500, 0.080), Vec3::new(1.750, 2.050, -3.810));
+    spawn_box_mat(commands, meshes, mat_trim.clone(), Vec3::new(2.150, 0.060, 0.080), Vec3::new(1.750, 2.050, -3.810));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(3.100, 0.220, 2.050), Vec3::new(-3.600, 0.420, -2.300));
+    spawn_box_mat(commands, meshes, mat_mattress.clone(), Vec3::new(2.950, 0.300, 1.900), Vec3::new(-3.600, 0.660, -2.300));
+    spawn_box_mat(commands, meshes, mat_blanket.clone(), Vec3::new(1.750, 0.060, 1.920), Vec3::new(-3.050, 0.840, -2.300));
+    spawn_box_mat(commands, meshes, mat_pillow.clone(), Vec3::new(0.720, 0.160, 1.100), Vec3::new(-4.550, 0.870, -2.300));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(0.140, 1.550, 2.120), Vec3::new(-5.140, 0.950, -2.300));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-4.850, 0.210, -3.100));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-4.850, 0.210, -1.500));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-2.350, 0.210, -3.100));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.420, 0.120), Vec3::new(-2.350, 0.210, -1.500));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.500, 0.130, 0.920), Vec3::new(-0.200, 0.870, -3.200));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(-1.280, 0.430, -3.530));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(-1.280, 0.430, -2.870));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(0.880, 0.430, -3.530));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.100, 0.850, 0.100), Vec3::new(0.880, 0.430, -2.870));
+    spawn_box_mat(commands, meshes, mat_black.clone(), Vec3::new(0.850, 0.550, 0.080), Vec3::new(-0.150, 1.280, -3.420));
+    spawn_box_mat(commands, meshes, mat_screen.clone(), Vec3::new(0.740, 0.440, 0.020), Vec3::new(-0.150, 1.280, -3.370));
+    spawn_box_mat(commands, meshes, mat_metal.clone(), Vec3::new(0.080, 0.350, 0.080), Vec3::new(-0.150, 0.990, -3.400));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.550, 0.015, 0.400), Vec3::new(-0.900, 0.950, -3.050));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 2.750, 1.450), Vec3::new(3.900, 1.380, -2.750));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 2.750, 1.450), Vec3::new(5.400, 1.380, -2.750));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(1.500, 2.750, 0.100), Vec3::new(4.650, 1.380, -3.450));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(1.500, 0.120, 1.450), Vec3::new(4.650, 2.700, -2.750));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(1.500, 0.120, 1.450), Vec3::new(4.650, 0.080, -2.750));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(1.400, 0.070, 1.300), Vec3::new(4.650, 1.550, -2.750));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(2.050, 0.130, 1.300), Vec3::new(1.100, 0.800, 1.200));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.780, 0.120), Vec3::new(0.250, 0.390, 0.700));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.780, 0.120), Vec3::new(0.250, 0.390, 1.700));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.780, 0.120), Vec3::new(1.950, 0.390, 0.700));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.120, 0.780, 0.120), Vec3::new(1.950, 0.390, 1.700));
+    spawn_box_mat(commands, meshes, mat_wood.clone(), Vec3::new(1.050, 0.620, 0.950), Vec3::new(-4.700, 0.310, 2.750));
+    spawn_box_mat(commands, meshes, mat_wood_dark.clone(), Vec3::new(0.780, 0.550, 0.750), Vec3::new(-4.820, 0.890, 2.820));
+    spawn_box_mat(commands, meshes, mat_paper.clone(), Vec3::new(0.070, 0.630, 0.970), Vec3::new(-4.700, 0.320, 2.750));
 }
 
+fn spawn_box_mat(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    material: Handle<StandardMaterial>,
+    size: Vec3,
+    position: Vec3,
+) {
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Cuboid::new(size.x, size.y, size.z)),
+        material,
+        transform: Transform::from_translation(position),
+        ..default()
+    });
+}
+
+#[allow(dead_code)]
 fn spawn_box(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -985,7 +1341,7 @@ fn start_new_game(state: &mut GameState) {
     let mut fresh = GameState::default();
     fresh.mode = GameMode::Playing;
     *state = fresh;
-    notify(state, "Доживи до шести. Слушай дверь.", 3.0);
+    notify(state, "Обойди дом: коридор, кухня, рабочая комната. Прячься и выполняй задания.", 4.5);
 }
 
 fn end_game(state: &mut GameState, won: bool, reason: &str, events: &mut EventWriter<SoundEvent>) {
@@ -1186,8 +1542,8 @@ fn update_monster(
             if state.monster.timer <= 0.0 {
                 state.monster.mode = MonsterMode::Warning;
                 state.monster.timer = 3.4;
-                state.monster.position = Vec3::new(5.18, 0.0, 1.5);
-                notify_danger(&mut state, "Шаги остановились у двери.", 3.0);
+                state.monster.position = Vec3::new(8.0, 0.0, 10.0);
+                notify_danger(&mut state, "Шаги остановились у входной двери.", 3.0);
                 events.send(SoundEvent::Knock);
             }
         }
@@ -1196,20 +1552,20 @@ fn update_monster(
             if state.monster.timer <= 0.0 {
                 state.monster.mode = MonsterMode::Entering;
                 state.monster.timer = 2.2;
-                state.monster.position = Vec3::new(5.18, 0.0, 1.5);
+                state.monster.position = Vec3::new(8.0, 0.0, 10.0);
                 state.monster.target = None;
                 state.monster.alerted_hide = false;
                 state.monster.stuck = 0.0;
-                notify_danger(&mut state, "Оно вошло в комнату.", 2.4);
+                notify_danger(&mut state, "Оно вошло в дом.", 2.4);
                 events.send(SoundEvent::Alert);
             }
         }
         MonsterMode::Entering => {
             state.monster.timer -= dt;
-            let remaining = move_monster_direct(&mut state, Vec3::new(4.35, 0.0, 1.45), 0.85, dt);
+            let remaining = move_monster_direct(&mut state, Vec3::new(8.0, 0.0, 8.5), 0.85, dt);
             if remaining < 0.22
                 || state.monster.timer <= 0.0
-                || (state.monster.position.x < 4.7 && state.monster.stuck < 0.4)
+                || (state.monster.position.z < 9.5 && state.monster.stuck < 0.4)
             {
                 begin_hunt(&mut state);
             }
@@ -1303,15 +1659,17 @@ fn update_monster(
         }
         MonsterMode::Leaving => {
             state.monster.timer -= dt;
-            let remaining = move_monster_direct(&mut state, Vec3::new(5.18, 0.0, 1.5), 1.0, dt);
-            if remaining < 0.2 || state.monster.timer <= 0.0 || state.monster.position.x > 5.02 {
+            let remaining = move_monster(&mut state, Vec3::new(8.0, 0.0, 10.3), 1.05, dt);
+            if remaining < 0.3 || state.monster.position.z > 9.9 || state.monster.timer <= 0.0 || state.monster.stuck > 1.2 {
                 state.monster.mode = MonsterMode::Away;
-                state.monster.timer = 8.0 + next_random(&mut state) * 5.0 - progress * 3.0;
+                state.monster.timer = 9.0 + next_random(&mut state) * 5.0 - progress * 3.0;
+                state.monster.position = Vec3::new(8.0, 0.0, 10.0);
                 state.monster.awareness = 0.0;
                 state.monster.exposure = 0.0;
                 state.monster.alerted_hide = false;
                 state.monster.path.clear();
                 state.monster.path_target = None;
+                state.monster.stuck = 0.0;
             }
         }
     }
@@ -1328,7 +1686,7 @@ fn update_monster(
     }
 }
 
-fn nearest_task(player: &PlayerState, tasks_done: &[bool; 3]) -> Option<usize> {
+fn nearest_task(player: &PlayerState, tasks_done: &[bool; 10]) -> Option<usize> {
     let mut nearest = None;
     let mut nearest_distance = 1.35;
     for (index, spot) in TASK_SPOTS.iter().enumerate() {
@@ -1394,7 +1752,7 @@ fn begin_hunt(state: &mut GameState) {
 
 fn begin_leaving(state: &mut GameState) {
     state.monster.mode = MonsterMode::Leaving;
-    state.monster.timer = 2.2;
+    state.monster.timer = 12.0;
     state.monster.awareness = 0.0;
     state.monster.exposure = 0.0;
     state.monster.alerted_hide = false;
@@ -1439,22 +1797,33 @@ fn nearest_walkable_cell(
     None
 }
 
+fn get_nav_grid() -> &'static (usize, usize, f32, f32, Vec<bool>) {
+    use std::sync::OnceLock;
+    static NAV: OnceLock<(usize, usize, f32, f32, Vec<bool>)> = OnceLock::new();
+    NAV.get_or_init(|| {
+        const CELL: f32 = 0.35;
+        const RADIUS: f32 = 0.36;
+        let min_x = ROOM_MIN_X + RADIUS + 0.02;
+        let min_z = ROOM_MIN_Z + RADIUS + 0.02;
+        let cols = ((ROOM_MAX_X - ROOM_MIN_X - RADIUS * 2.0 - 0.04) / CELL).floor() as usize + 1;
+        let rows = ((ROOM_MAX_Z - ROOM_MIN_Z - RADIUS * 2.0 - 0.04) / CELL).floor() as usize + 1;
+        let total = cols * rows;
+        let mut walkable = vec![false; total];
+        for row in 0..rows {
+            for col in 0..cols {
+                walkable[row * cols + col] = !collides(min_x + col as f32 * CELL, min_z + row as f32 * CELL, RADIUS);
+            }
+        }
+        (cols, rows, min_x, min_z, walkable)
+    })
+}
+
 fn find_path(from: Vec3, to: Vec3) -> Option<Vec<Vec3>> {
     const CELL: f32 = 0.35;
-    const RADIUS: f32 = 0.36;
-    let min_x = ROOM_MIN_X + RADIUS + 0.02;
-    let min_z = ROOM_MIN_Z + RADIUS + 0.02;
-    let cols = ((ROOM_MAX_X - ROOM_MIN_X - RADIUS * 2.0 - 0.04) / CELL).floor() as usize + 1;
-    let rows = ((ROOM_MAX_Z - ROOM_MIN_Z - RADIUS * 2.0 - 0.04) / CELL).floor() as usize + 1;
+    let &(cols, rows, min_x, min_z, ref walkable) = get_nav_grid();
     let total = cols * rows;
-    let mut walkable = vec![false; total];
-    for row in 0..rows {
-        for col in 0..cols {
-            walkable[row * cols + col] = !collides(min_x + col as f32 * CELL, min_z + row as f32 * CELL, RADIUS);
-        }
-    }
-    let start = nearest_walkable_cell(from.x, from.z, CELL, min_x, min_z, cols, rows, &walkable)?;
-    let goal = nearest_walkable_cell(to.x, to.z, CELL, min_x, min_z, cols, rows, &walkable)?;
+    let start = nearest_walkable_cell(from.x, from.z, CELL, min_x, min_z, cols, rows, walkable)?;
+    let goal = nearest_walkable_cell(to.x, to.z, CELL, min_x, min_z, cols, rows, walkable)?;
     let mut came_from = vec![-1_i32; total];
     let mut g_score = vec![f32::INFINITY; total];
     let mut closed = vec![false; total];
@@ -1530,8 +1899,8 @@ fn find_path(from: Vec3, to: Vec3) -> Option<Vec<Vec3>> {
 
 fn move_monster(state: &mut GameState, target: Vec3, speed: f32, dt: f32) -> f32 {
     let target_distance = distance_xz(state.monster.position, target);
-    if target_distance < 0.02 {
-        return 0.0;
+    if target_distance < 0.02 || dt <= 0.0 {
+        return target_distance;
     }
     state.monster.repath_timer -= dt;
     let target_moved = state
@@ -1577,10 +1946,24 @@ fn move_monster(state: &mut GameState, target: Vec3, speed: f32, dt: f32) -> f32
     let moved = distance_xz(before, state.monster.position);
     if moved < 0.001 {
         state.monster.stuck += dt;
+        let away = (-flat.y).atan2(-flat.x);
+        for i in 0..8 {
+            let angle = away + (i as f32 - 3.5) * std::f32::consts::FRAC_PI_4;
+            let sx = angle.cos() * 0.06;
+            let sz = angle.sin() * 0.06;
+            if !collides(state.monster.position.x + sx, state.monster.position.z + sz, radius) {
+                state.monster.position.x += sx;
+                state.monster.position.z += sz;
+                break;
+            }
+        }
         state.monster.path.clear();
         state.monster.repath_timer = 0.0;
         if state.monster.mode == MonsterMode::Hunting && state.monster.stuck > 0.65 {
             choose_patrol_target(state);
+        }
+        if state.monster.mode == MonsterMode::Entering && state.monster.stuck > 1.2 {
+            begin_hunt(state);
         }
     } else {
         state.monster.stuck = (state.monster.stuck - dt * 2.0).max(0.0);
@@ -1592,8 +1975,8 @@ fn move_monster_direct(state: &mut GameState, target: Vec3, speed: f32, dt: f32)
     let delta = target - state.monster.position;
     let flat = Vec2::new(delta.x, delta.z);
     let dist = flat.length();
-    if dist < 0.02 {
-        return 0.0;
+    if dist < 0.02 || dt <= 0.0 {
+        return dist;
     }
     state.monster.facing = flat.y.atan2(flat.x);
     let step = flat.normalize() * speed * dt;
@@ -1616,19 +1999,20 @@ fn move_monster_direct(state: &mut GameState, target: Vec3, speed: f32, dt: f32)
 }
 
 fn choose_patrol_target(state: &mut GameState) {
-    let mut candidates: Vec<usize> = PATROL_POINTS
-        .iter()
-        .enumerate()
-        .filter(|(_, point)| distance_xz(state.monster.position, **point) > 0.9)
-        .map(|(index, _)| index)
+    let room = state.monster.room.min(3);
+    let start_idx = room * 3;
+    let end_idx = start_idx + 3;
+    let mut candidates: Vec<usize> = (start_idx..end_idx)
+        .filter(|&index| distance_xz(state.monster.position, PATROL_POINTS[index]) > 0.9)
         .collect();
     if candidates.is_empty() {
-        candidates = (0..PATROL_POINTS.len()).collect();
+        candidates = (start_idx..end_idx).collect();
     }
-    let index = (next_random(state) * candidates.len() as f32) as usize;
-    state.monster.target = Some(candidates[index.min(candidates.len() - 1)]);
+    let r = (next_random(state) * candidates.len() as f32) as usize;
+    state.monster.target = Some(candidates[r.min(candidates.len() - 1)]);
     state.monster.path.clear();
     state.monster.path_target = None;
+    state.monster.stuck = 0.0;
 }
 
 fn next_random(state: &mut GameState) -> f32 {
@@ -1857,12 +2241,13 @@ fn update_clock_text(state: Res<GameState>, mut query: Query<&mut Text, With<Clo
 fn update_objective_text(state: Res<GameState>, mut query: Query<&mut Text, With<ObjectiveText>>) {
     if let Ok(mut text) = query.get_single_mut() {
         let value = if state.player.hidden.is_some() {
-            "В укрытии · оставайся тихим"
+            "В укрытии · оставайся тихим".to_string()
         } else {
-            "Доживи до 6:00"
+            let done = state.tasks_done.iter().filter(|&&d| d).count();
+            format!("Задания {}/{} · доживи до 6:00", done, TASK_SPOTS.len())
         };
         if text.sections[0].value != value {
-            text.sections[0].value = value.to_string();
+            text.sections[0].value = value;
         }
     }
 }
@@ -1882,9 +2267,9 @@ fn update_danger_text(state: Res<GameState>, mut query: Query<&mut Text, With<Da
         } else {
             match state.monster.mode {
                 MonsterMode::Away => "Пока тихо",
-                MonsterMode::Warning => "Оно у двери",
+                MonsterMode::Warning => "Оно у входной двери",
                 MonsterMode::Entering => "Оно вошло",
-                MonsterMode::Hunting => "Оно в комнате",
+                MonsterMode::Hunting => "Оно бродит по дому",
                 MonsterMode::Chase => {
                     if state.player.hidden.is_some() {
                         "Оно ищет тебя"

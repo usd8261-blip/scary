@@ -657,6 +657,32 @@ kbd {
     radial-gradient(ellipse at center, transparent 15%, #000000b0 90%);
 }
 
+/* Шкаф в коридоре и шкаф кабинета — узкая щель между створками */
+.hidden-mask.closet,
+.hidden-mask.cabinet {
+  display: block;
+  background:
+    linear-gradient(90deg, #020303 0, #020303f2 26%, transparent 34%, transparent 66%, #020303f2 74%, #020303 100%),
+    radial-gradient(ellipse at center, transparent 18%, #000000b8 92%);
+}
+
+/* Под кухонной стойкой — темнота и низкая перекладина сверху */
+.hidden-mask.counter {
+  display: block;
+  background:
+    linear-gradient(180deg, #020303 0, #020303f7 34%, transparent 42%, transparent 100%),
+    radial-gradient(ellipse at center, transparent 16%, #000000c2 92%);
+}
+
+/* Кладовка — полки и доски перед глазами */
+.hidden-mask.pantry {
+  display: block;
+  background:
+    repeating-linear-gradient(180deg, #020303f7 0, #020303f7 9%, transparent 9%, transparent 15%),
+    repeating-linear-gradient(90deg, #020303d9 0, #020303d9 3%, transparent 3%, transparent 22%),
+    radial-gradient(ellipse at center, transparent 14%, #000000b8 92%);
+}
+
 .crosshair {
   position: absolute;
   top: 50%;

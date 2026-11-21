@@ -29,12 +29,21 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     sound: document.getElementById("soundButton")
   };
 
-  const NIGHT_DURATION = 150;
-  const ROOM = { minX: -5.65, maxX: 5.65, minZ: -3.65, maxZ: 3.65 };
+  const NIGHT_DURATION = 210;
+  const MONSTER_RADIUS = 0.34;
+  const ROOM = { minX: -6.5, maxX: 20.5, minZ: -10.5, maxZ: 10.5 };
+  // Задания разложены по всем комнатам дома: спальня, коридор, кухня, рабочая комната.
   const taskSpots = [
-    { name: "починить окно", hint: "подойди к окну", x: 1.75, z: -3.1, lookX: 1.75, lookY: 1.6, lookZ: -3.8, hold: 3, bonus: 20 },
-    { name: "проверить розетку", hint: "подойди к тумбе", x: 1.1, z: 2.1, lookX: 1.1, lookY: 0.9, lookZ: 1.2, hold: 2.5, bonus: 15 },
-    { name: "закрыть засов", hint: "подойди к двери", x: 5, z: 1.5, lookX: 5.75, lookY: 1.2, lookZ: 1.5, hold: 2, bonus: 15 }
+    { name: "починить окно", hint: "подойди к окну", x: 1.75, z: -2.85, lookX: 1.75, lookY: 2.05, lookZ: -3.84, hold: 3, bonus: 12 },
+    { name: "проверить розетку", hint: "подойди к столу", x: 1.1, z: 2.3, lookX: 1.1, lookY: 0.95, lookZ: 1.2, hold: 2.5, bonus: 10 },
+    { name: "закрыть засов", hint: "подойди к двери спальни", x: 4.9, z: 0.9, lookX: 6.05, lookY: 1.2, lookZ: 0.35, hold: 2, bonus: 10 },
+    { name: "проверить входную дверь", hint: "подойди к входной двери", x: 8, z: 9.1, lookX: 8, lookY: 1.3, lookZ: 10, hold: 2.5, bonus: 12 },
+    { name: "помыть посуду", hint: "подойди к мойке", x: 12.4, z: -8.5, lookX: 12.4, lookY: 1, lookZ: -9.45, hold: 4, bonus: 14 },
+    { name: "закрыть холодильник", hint: "подойди к холодильнику", x: 18.3, z: -7.2, lookX: 19.4, lookY: 1.3, lookZ: -7.2, hold: 2, bonus: 10 },
+    { name: "вытереть стол", hint: "подойди к обеденному столу", x: 14.2, z: -3, lookX: 14.2, lookY: 0.85, lookZ: -4, hold: 3, bonus: 12 },
+    { name: "выключить компьютер", hint: "подойди к рабочему столу", x: 17, z: 5, lookX: 19.6, lookY: 1.35, lookZ: 5, hold: 3, bonus: 14 },
+    { name: "запереть сейф", hint: "подойди к сейфу", x: 18.4, z: 9, lookX: 19.5, lookY: 0.75, lookZ: 9.35, hold: 2.5, bonus: 10 },
+    { name: "собрать бумаги", hint: "подойди к полкам", x: 14.4, z: 9, lookX: 14.4, lookY: 1, lookZ: 9.6, hold: 3.5, bonus: 12 }
   ];
   const keys = new Set();
   const touchMode = window.matchMedia("(pointer: coarse)").matches;
@@ -71,10 +80,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   moon.position.set(2, 5, -4);
   moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
-  moon.shadow.camera.left = -7;
-  moon.shadow.camera.right = 7;
-  moon.shadow.camera.top = 6;
-  moon.shadow.camera.bottom = -6;
+  moon.shadow.camera.left = -15;
+  moon.shadow.camera.right = 15;
+  moon.shadow.camera.top = 10;
+  moon.shadow.camera.bottom = -10;
   scene.add(moon);
 
   const flashlight = new THREE.SpotLight(0xf5f0d5, 58, 13, Math.PI / 7, 0.48, 1.35);
@@ -89,7 +98,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   monitorLight.position.set(-0.15, 1.25, -2.85);
   scene.add(monitorLight);
   const warningLight = new THREE.PointLight(0xb52e24, 0, 3.5, 2);
-  warningLight.position.set(5.45, 0.2, 1.5);
+  warningLight.position.set(8, 0.2, 10);
   scene.add(warningLight);
 
   const materials = {
@@ -121,39 +130,196 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     return mesh;
   }
 
-  const colliders = [
-    { id: "bed", minX: -5.15, maxX: -2.05, minZ: -3.35, maxZ: -1.25 },
-    { id: "desk", minX: -1.45, maxX: 1.05, minZ: -3.65, maxZ: -2.72 },
-    { id: "wardrobe", minX: 3.85, maxX: 5.45, minZ: -3.5, maxZ: -2.0 },
-    { id: "table", minX: 0.05, maxX: 2.15, minZ: 0.55, maxZ: 1.85 },
-    { id: "boxes", minX: -5.25, maxX: -4.15, minZ: 2.15, maxZ: 3.25 }
-  ];
+  const colliders = [];
+  const nav = { cell: 0.35, minX: 0, minZ: 0, cols: 0, rows: 0, walkable: null };
+  const roomLights = {};
+  // Укрытие: id совпадает с CSS-классом маски; y — высота камеры внутри.
   const hideSpots = [
     { id: "bed", name: "под кроватью", x: -3.55, z: -2.15, y: 0.34, exitX: -3.55, exitZ: -0.82, yaw: Math.PI, pitch: 0 },
-    { id: "wardrobe", name: "в шкафу", x: 4.65, z: -2.65, y: 1.42, exitX: 4.65, exitZ: -1.55, yaw: Math.PI, pitch: 0 }
+    { id: "wardrobe", name: "в шкафу", x: 4.65, z: -2.65, y: 1.42, exitX: 4.65, exitZ: -1.55, yaw: Math.PI, pitch: 0 },
+    { id: "closet", name: "в шкафу коридора", x: 6.75, z: 6.8, y: 1.45, exitX: 7.6, exitZ: 6.8, yaw: -Math.PI / 2, pitch: 0 },
+    { id: "counter", name: "под стойкой", x: 13.1, z: -9.05, y: 0.7, exitX: 13.1, exitZ: -8.4, yaw: Math.PI, pitch: 0 },
+    { id: "pantry", name: "в кладовке", x: 19, z: -2.2, y: 1.4, exitX: 18.4, exitZ: -2.2, yaw: Math.PI / 2, pitch: 0 },
+    { id: "cabinet", name: "в шкафу кабинета", x: 10.78, z: 8.2, y: 1.4, exitX: 11.7, exitZ: 8.2, yaw: -Math.PI / 2, pitch: 0 }
   ];
-  const patrolPoints = [
-    { x: 4.6, z: 1.5 }, { x: 2.8, z: -0.8 }, { x: 0, z: -1.25 },
-    { x: -2.2, z: -0.4 }, { x: -3.1, z: 1.35 }, { x: 0, z: 2.8 },
-    { x: 4.2, z: 2.8 }, { x: 2.75, z: -2.05 }, { x: -3.2, z: 3.1 }
-  ];
+  // Маршруты обхода по комнатам: за одну вылазку монстр обыскивает одну комнату,
+  // а иногда идёт проверять конкретное укрытие.
+  const patrolRooms = {
+    bedroom: [{ x: -3, z: 2.6 }, { x: 2.6, z: 3 }, { x: 3, z: 0.2 }],
+    corridor: [{ x: 8, z: 0.5 }, { x: 8, z: 8.2 }, { x: 8, z: -8.6 }],
+    kitchen: [{ x: 12.6, z: -8.2 }, { x: 15.2, z: -5.6 }, { x: 17.5, z: -2 }],
+    workroom: [{ x: 12.6, z: 8.6 }, { x: 17, z: 7.6 }, { x: 17.6, z: 2.4 }]
+  };
+  const patrolPoints = Object.values(patrolRooms).flat();
 
   function buildRoom() {
+    function wall(x, z, w, d, id = "wall") {
+      box(w, 3.5, d, x, 1.75, z, materials.wall);
+      colliders.push({ id, minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
+    }
+
+    // Bedroom 1 (Room 07)
     box(12, 0.14, 8, 0, -0.08, 0, materials.floor);
     for (let x = -5.5; x < 5.8; x += 0.5) {
       const strip = box(0.48, 0.012, 7.85, x, 0.003, 0, Math.round(x * 2) % 2 ? materials.floor : materials.floorAlt);
       strip.castShadow = false;
     }
-    box(12, 3.5, 0.16, 0, 1.75, -4, materials.wall);
-    box(12, 3.5, 0.16, 0, 1.75, 4, materials.wall);
-    box(0.16, 3.5, 8, -6, 1.75, 0, materials.wall);
-    box(0.16, 3.5, 4.75, 6, 1.75, -1.625, materials.wall);
-    box(0.16, 3.5, 1.75, 6, 1.75, 3.125, materials.wall);
-    box(0.16, 1.1, 1.5, 6, 2.95, 1.5, materials.wall);
+    wall(-6.08, 0, 0.16, 8, "b1w1");
+    wall(0, -4.08, 12, 0.16, "b1w2");
+    wall(0, 4.08, 12, 0.16, "b1w3");
+    // Wall with door to corridor
+    box(0.16, 3.5, 3.25, 6.08, 1.75, -2.375, materials.wall);
+    colliders.push({ id: "b1w4a", minX: 6, maxX: 6.16, minZ: -4, maxZ: -0.75 });
+    box(0.16, 3.5, 3.25, 6.08, 1.75, 2.375, materials.wall);
+    colliders.push({ id: "b1w4b", minX: 6, maxX: 6.16, minZ: 0.75, maxZ: 4 });
+    box(0.16, 1.1, 1.5, 6.08, 2.95, 0, materials.wall);
+
     box(11.8, 0.16, 0.08, 0, 0.12, -3.88, materials.trim);
     box(11.8, 0.16, 0.08, 0, 0.12, 3.88, materials.trim);
     box(0.08, 0.16, 7.8, -5.88, 0.12, 0, materials.trim);
     box(3.4, 0.025, 2.1, -0.5, 0.02, 0.45, materials.rug);
+
+    // ── Corridor: connects the bedroom, the kitchen and the work room ───────
+    box(3.92, 0.14, 20.16, 8.08, -0.08, 0, materials.floor);
+    const runner = box(1.5, 0.02, 14, 8, 0.015, 0.6, materials.rug);
+    runner.castShadow = false;
+    wall(8.08, -10.16, 4.16, 0.16, "cw1");
+    // South wall with the front door opening (x 7.1..8.9)
+    wall(6.55, 10.16, 1.1, 0.16, "cw2a");
+    wall(9.53, 10.16, 1.26, 0.16, "cw2b");
+    box(1.8, 0.85, 0.16, 8, 3.08, 10.16, materials.wall);
+    // East wall with doorways to the kitchen (z -6..-4.4) and work room (z 4.4..6)
+    wall(10.08, -8.04, 0.16, 4.08, "cw3a");
+    wall(10.08, 0, 0.16, 8.8, "cw3b");
+    wall(10.08, 8.04, 0.16, 4.08, "cw3c");
+    box(0.16, 0.85, 1.6, 10.08, 3.08, -5.2, materials.wall);
+    box(0.16, 0.85, 1.6, 10.08, 3.08, 5.2, materials.wall);
+    [-6, -4.4, 4.4, 6].forEach((z) => box(0.24, 2.7, 0.12, 10.08, 1.35, z, materials.trim));
+    // Corridor closet — hiding place
+    const closet = new THREE.Group();
+    scene.add(closet);
+    box(0.55, 2.3, 1.25, 6.45, 1.15, 6.8, materials.woodDark, closet);
+    colliders.push({ id: "closet", minX: 6.17, maxX: 6.73, minZ: 6.17, maxZ: 7.43 });
+    box(0.05, 2.1, 0.6, 6.74, 1.12, 6.49, materials.wood, closet);
+    box(0.05, 2.1, 0.6, 6.74, 1.12, 7.11, materials.wood, closet);
+    box(0.04, 0.3, 0.04, 6.77, 1.15, 6.72, materials.metal, closet);
+    // Coat hooks and a bench by the front door
+    box(0.06, 0.08, 1.4, 6.18, 1.85, 8.9, materials.woodDark);
+    box(0.5, 0.1, 1.2, 6.45, 0.45, 8.9, materials.wood);
+    box(0.08, 0.45, 0.08, 6.25, 0.23, 8.45, materials.woodDark);
+    box(0.08, 0.45, 0.08, 6.25, 0.23, 9.35, materials.woodDark);
+
+    // ── Kitchen: north-east wing ────────────────────────────────────────────
+    box(10, 0.14, 10.2, 15.08, -0.08, -5, materials.floor);
+    for (let x = 10.6; x < 20; x += 0.6) {
+      const tile = box(0.56, 0.012, 9.9, x, 0.004, -5, Math.round(x * 5) % 2 ? materials.floor : materials.floorAlt);
+      tile.castShadow = false;
+    }
+    wall(15.08, -10.16, 10.16, 0.16, "kw1");
+    wall(20.08, -5.04, 0.16, 10.4, "kw2");
+    wall(15.08, 0.08, 10.16, 0.16, "kw3");
+    // Counter run with the sink along the north wall
+    box(5.4, 0.86, 0.72, 13.1, 0.43, -9.48, materials.wood);
+    colliders.push({ id: "counter", minX: 10.4, maxX: 15.8, minZ: -9.84, maxZ: -9.12 });
+    box(5.6, 0.08, 0.82, 13.1, 0.9, -9.48, materials.woodDark);
+    box(0.9, 0.04, 0.48, 12.3, 0.93, -9.48, materials.metal);
+    box(0.06, 0.34, 0.06, 12.3, 1.08, -9.72, materials.metal);
+    box(5.2, 0.72, 0.34, 13.1, 2.2, -9.82, materials.wood);
+    box(1.7, 1.1, 0.04, 12.3, 2.08, -10.06, materials.window);
+    box(1.86, 0.07, 0.1, 12.3, 2.66, -10, materials.trim);
+    box(1.86, 0.07, 0.1, 12.3, 1.5, -10, materials.trim);
+    // Fridge
+    box(1, 1.9, 0.9, 19.5, 0.95, -7.2, materials.metal);
+    colliders.push({ id: "fridge", minX: 19, maxX: 20, minZ: -7.65, maxZ: -6.75 });
+    box(0.04, 0.9, 0.04, 18.98, 1.2, -7.2, materials.metal);
+    // Dining table and chairs
+    box(2.2, 0.1, 1.2, 14.2, 0.78, -4, materials.wood);
+    colliders.push({ id: "kitchenTable", minX: 13.1, maxX: 15.3, minZ: -4.6, maxZ: -3.4 });
+    [[13.3, -4.42], [15.1, -4.42], [13.3, -3.58], [15.1, -3.58]].forEach(([x, z]) => box(0.12, 0.76, 0.12, x, 0.39, z, materials.woodDark));
+    [[13.5, -2.98], [15, -2.98], [13.5, -4.98], [15, -4.98]].forEach(([x, z]) => {
+      box(0.42, 0.06, 0.42, x, 0.45, z, materials.woodDark);
+      box(0.42, 0.06, 0.1, x, 0.85, z + (z < -4 ? -0.18 : 0.18), materials.woodDark);
+    });
+    const plate = box(0.5, 0.04, 0.5, 15.1, 0.85, -4, materials.paper);
+    plate.rotation.y = 0.2;
+    // Pantry — hiding place
+    const pantry = new THREE.Group();
+    scene.add(pantry);
+    box(0.85, 2.2, 1.5, 19.55, 1.1, -2.2, materials.woodDark, pantry);
+    colliders.push({ id: "pantry", minX: 19.12, maxX: 19.98, minZ: -2.95, maxZ: -1.45 });
+    box(0.05, 2, 0.68, 19.1, 1.06, -2.56, materials.wood, pantry);
+    box(0.05, 2, 0.68, 19.1, 1.06, -1.84, materials.wood, pantry);
+    // Low pendant light over the table
+    box(0.04, 0.5, 0.04, 14.2, 2.9, -4, materials.trim);
+
+    // ── Work room (кабинет): south-east wing ────────────────────────────────
+    box(10, 0.14, 10, 15.08, -0.08, 5, materials.floor);
+    for (let z = 0.7; z < 9.9; z += 0.7) {
+      const board = box(9.8, 0.012, 0.66, 15.08, 0.004, z, Math.round(z * 10) % 2 ? materials.floor : materials.floorAlt);
+      board.castShadow = false;
+    }
+    wall(15.08, 10.16, 10.16, 0.16, "ww1");
+    wall(20.08, 5.04, 0.16, 10.4, "ww2");
+    // Desk against the east wall with the computer
+    box(2.6, 0.12, 0.95, 18.7, 0.79, 5, materials.wood);
+    colliders.push({ id: "desk2", minX: 17.4, maxX: 20, minZ: 4.5, maxZ: 5.5 });
+    [[17.5, 4.62], [19.9, 4.62], [17.5, 5.38], [19.9, 5.38]].forEach(([x, z]) => box(0.1, 0.76, 0.1, x, 0.38, z, materials.woodDark));
+    box(0.06, 0.62, 0.98, 19.82, 1.4, 5, materials.black);
+    box(0.02, 0.52, 0.86, 19.78, 1.4, 5, materials.screen);
+    box(0.16, 0.24, 0.26, 19.86, 0.98, 5, materials.metal);
+    box(0.5, 0.1, 0.5, 18.2, 0.5, 5, materials.woodDark);
+    box(0.5, 0.55, 0.08, 18.2, 0.8, 5.24, materials.woodDark);
+    box(0.5, 0.55, 0.08, 18.2, 0.8, 4.76, materials.woodDark);
+    // Desk lamp
+    box(0.22, 0.04, 0.22, 17.75, 0.87, 4.72, materials.metal);
+    box(0.05, 0.4, 0.05, 17.75, 1.07, 4.72, materials.metal);
+    box(0.2, 0.14, 0.2, 17.75, 1.3, 4.72, materials.metal);
+    // Shelves and papers
+    for (let i = 0; i < 3; i += 1) box(3.2, 0.08, 0.42, 14.6, 1 + i * 0.62, 9.72, materials.wood);
+    box(0.08, 2.4, 0.42, 13, 1.2, 9.72, materials.woodDark);
+    box(0.08, 2.4, 0.42, 16.2, 1.2, 9.72, materials.woodDark);
+    box(0.5, 0.16, 0.3, 13.9, 1.12, 9.7, materials.paper);
+    box(0.42, 0.12, 0.28, 15.2, 1.74, 9.7, materials.paper);
+    box(0.5, 0.2, 0.3, 14.6, 2.36, 9.7, materials.paper);
+    // Safe
+    box(0.7, 0.7, 0.65, 19.5, 0.35, 9.35, materials.metal);
+    colliders.push({ id: "safe", minX: 19.15, maxX: 19.85, minZ: 9.03, maxZ: 9.67 });
+    box(0.06, 0.2, 0.06, 19.14, 0.42, 9.35, materials.metal);
+    // Cabinet — hiding place
+    const cabinet = new THREE.Group();
+    scene.add(cabinet);
+    box(0.55, 2.3, 1.5, 10.45, 1.15, 8.2, materials.woodDark, cabinet);
+    colliders.push({ id: "cabinet", minX: 10.17, maxX: 10.72, minZ: 7.45, maxZ: 8.95 });
+    box(0.05, 2.1, 0.68, 10.74, 1.12, 7.86, materials.wood, cabinet);
+    box(0.05, 2.1, 0.68, 10.74, 1.12, 8.54, materials.wood, cabinet);
+    // Whiteboard and a reading chair
+    box(2.4, 1.2, 0.05, 14.4, 1.9, 0.2, materials.paper);
+    box(2.52, 0.06, 0.08, 14.4, 2.53, 0.2, materials.metal);
+    box(0.9, 0.12, 0.85, 12.6, 0.42, 2.6, materials.blanket);
+    box(0.12, 0.9, 0.85, 12.1, 0.72, 2.6, materials.blanket);
+    colliders.push({ id: "armchair", minX: 12.05, maxX: 13.1, minZ: 2.15, maxZ: 3.05 });
+    box(1.6, 0.02, 1.2, 14.5, 0.02, 4.6, materials.rug);
+    // Window on the east wall
+    box(0.04, 1.3, 1.8, 20, 2, 7.2, materials.window);
+    box(0.1, 0.07, 1.96, 20.02, 2.68, 7.2, materials.trim);
+    box(0.1, 0.07, 1.96, 20.02, 1.32, 7.2, materials.trim);
+
+    // Room lights
+    const kitchenLight = new THREE.PointLight(0xd9c39a, 0.85, 9, 2);
+    kitchenLight.position.set(14.2, 2.7, -4.6);
+    scene.add(kitchenLight);
+    const fridgeGlow = new THREE.PointLight(0x7fd1a8, 0.7, 3.2, 2);
+    fridgeGlow.position.set(19.2, 1.1, -7.2);
+    scene.add(fridgeGlow);
+    const deskLight = new THREE.PointLight(0xf0c98a, 0.75, 4.5, 2);
+    deskLight.position.set(17.75, 1.25, 4.72);
+    scene.add(deskLight);
+    const workLight = new THREE.PointLight(0x9fb7a6, 0.6, 9, 2);
+    workLight.position.set(15.4, 2.7, 6.4);
+    scene.add(workLight);
+    roomLights.kitchen = kitchenLight;
+    roomLights.desk = deskLight;
+    roomLights.work = workLight;
 
     box(2.15, 1.5, 0.04, 1.75, 2.05, -3.9, materials.window);
     box(2.35, 0.09, 0.1, 1.75, 2.82, -3.84, materials.trim);
@@ -164,6 +330,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(2.15, 0.06, 0.08, 1.75, 2.05, -3.81, materials.trim);
 
     box(3.1, 0.22, 2.05, -3.6, 0.42, -2.3, materials.woodDark);
+    colliders.push({ id: "bed", minX: -5.15, maxX: -2.05, minZ: -3.35, maxZ: -1.25 });
     box(2.95, 0.3, 1.9, -3.6, 0.66, -2.3, materials.mattress);
     box(1.75, 0.06, 1.92, -3.05, 0.84, -2.3, materials.blanket);
     box(0.72, 0.16, 1.1, -4.55, 0.87, -2.3, materials.pillow);
@@ -173,6 +340,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     });
 
     box(2.5, 0.13, 0.92, -0.2, 0.87, -3.2, materials.wood);
+    colliders.push({ id: "desk", minX: -1.45, maxX: 1.05, minZ: -3.65, maxZ: -2.72 });
     [-1.28, 0.88].forEach((x) => {
       [-3.53, -2.87].forEach((z) => box(0.1, 0.85, 0.1, x, 0.43, z, materials.woodDark));
     });
@@ -184,6 +352,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
 
     const wardrobe = new THREE.Group();
     scene.add(wardrobe);
+    colliders.push({ id: "wardrobe", minX: 3.85, maxX: 5.45, minZ: -3.5, maxZ: -2.0 });
     box(0.12, 2.75, 1.45, 3.9, 1.38, -2.75, materials.woodDark, wardrobe);
     box(0.12, 2.75, 1.45, 5.4, 1.38, -2.75, materials.woodDark, wardrobe);
     box(1.5, 2.75, 0.1, 4.65, 1.38, -3.45, materials.woodDark, wardrobe);
@@ -192,6 +361,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     box(1.4, 0.07, 1.3, 4.65, 1.55, -2.75, materials.woodDark, wardrobe);
 
     box(2.05, 0.13, 1.3, 1.1, 0.8, 1.2, materials.wood);
+    colliders.push({ id: "table", minX: 0.05, maxX: 2.15, minZ: 0.55, maxZ: 1.85 });
     [0.25, 1.95].forEach((x) => {
       [0.7, 1.7].forEach((z) => box(0.12, 0.78, 0.12, x, 0.39, z, materials.woodDark));
     });
@@ -201,11 +371,13 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     scene.add(dish);
 
     box(1.05, 0.62, 0.95, -4.7, 0.31, 2.75, materials.wood);
+    colliders.push({ id: "boxes", minX: -5.25, maxX: -4.15, minZ: 2.15, maxZ: 3.25 });
     box(0.78, 0.55, 0.75, -4.82, 0.89, 2.82, materials.woodDark);
     box(0.07, 0.63, 0.97, -4.7, 0.32, 2.75, materials.paper);
   }
 
   buildRoom();
+  buildNavigation();
 
   const wardrobeDoors = new THREE.Group();
   scene.add(wardrobeDoors);
@@ -215,10 +387,25 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   box(0.035, 0.28, 0.06, 4.75, 1.42, -1.94, materials.metal, wardrobeDoors);
 
   const doorPivot = new THREE.Group();
-  doorPivot.position.set(5.92, 0, 0.75);
+  doorPivot.position.set(6.08, 0, -0.75);
   scene.add(doorPivot);
   box(0.13, 2.4, 1.5, 0, 1.2, 0.75, materials.woodDark, doorPivot);
-  box(0.08, 0.08, 0.08, -0.11, 1.15, 1.3, materials.metal, doorPivot);
+  box(0.08, 0.08, 0.08, -0.11, 1.15, 1.28, materials.metal, doorPivot);
+
+  // Front door of the house — the monster comes in through it.
+  const frontDoorPivot = new THREE.Group();
+  frontDoorPivot.position.set(7.1, 0, 10.16);
+  scene.add(frontDoorPivot);
+  box(1.8, 2.45, 0.1, 0.9, 1.25, 0, materials.woodDark, frontDoorPivot);
+  box(0.06, 0.06, 0.24, 0.2, 1.15, -0.12, materials.metal, frontDoorPivot);
+  box(0.06, 0.06, 0.24, 0.2, 1.15, 0.12, materials.metal, frontDoorPivot);
+  box(0.16, 2.7, 0.3, 7.02, 1.35, 10.16, materials.trim);
+  box(0.16, 2.7, 0.3, 8.98, 1.35, 10.16, materials.trim);
+  // Тёмное «снаружи» за входной дверью, чтобы за ней не было пустоты.
+  const porchBack = box(5.4, 3.5, 0.12, 8, 1.75, 11.3, materials.black);
+  porchBack.castShadow = false;
+  const porchFloor = box(5.4, 0.14, 2.3, 8, -0.08, 11.15, materials.floorAlt);
+  porchFloor.castShadow = false;
 
   const dustGeometry = new THREE.BufferGeometry();
   const dustPositions = new Float32Array(180 * 3);
@@ -460,8 +647,8 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     keys.clear();
     player = {
       x: 0,
-      z: 2.2,
-      yaw: 0,
+      z: 2.6,
+      yaw: -Math.PI / 2,
       pitch: 0,
       radius: 0.28,
       stamina: 100,
@@ -476,12 +663,12 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       bob: 0
     };
     monster = {
-      x: 5.18,
-      z: 1.5,
-      radius: 0.34,
+      x: 8,
+      z: 10,
+      radius: MONSTER_RADIUS,
       facing: Math.PI,
       state: "away",
-      timer: 9,
+      timer: random(10, 15),
       awareness: 0,
       exposure: 0,
       target: null,
@@ -493,6 +680,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       pathIndex: 0,
       pathTarget: null,
       repathTimer: 0,
+      searchTarget: null,
+      searchWait: 0,
+      targetIsSearch: false,
+      room: null,
       anim: 0
     };
     tasksDone = taskSpots.map(() => false);
@@ -504,6 +695,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     wardrobeDoors.visible = true;
     monsterGroup.visible = false;
     doorPivot.rotation.y = 0;
+    frontDoorPivot.rotation.y = 0;
     updateCamera(0);
     updateScene(0);
     updateHUD();
@@ -527,7 +719,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     ui.frame.classList.add("playing");
     ui.pause.textContent = "Пауза";
     ui.primary.blur();
-    notify("Доживи до шести. Слушай дверь.", 3.5);
+    notify("Обойди дом: коридор, кухня, рабочая комната. Прячься и выполняй задания.", 4.5);
     lastTime = performance.now();
     lockMouse();
   }
@@ -552,7 +744,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     showOverlay({
       eyebrow: "НОЧЬ ОСТАНОВЛЕНА",
       title: "ПАУЗА",
-      text: "В комнате тихо. По крайней мере, пока ты здесь.",
+      text: "В доме тихо. По крайней мере, пока ты здесь.",
       button: "Продолжить",
       hint: "P или Esc — продолжить",
       action: resumeGame
@@ -584,9 +776,9 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       showOverlay({
         eyebrow: "06:00 · РАССВЕТ",
         title: "ТЫ ВЫЖИЛ",
-        text: "Первый свет вошёл в комнату, и шаги исчезли. Но следующей ночью оно может вернуться.",
+        text: "Первый свет вошёл в дом, и шаги исчезли. Но следующей ночью оно может вернуться.",
         button: "Ещё одна ночь",
-        hint: "Слушай дверь и не трать силы зря",
+        hint: "Обходи комнаты с фонариком и не трать силы зря",
         action: startGame
       });
     } else {
@@ -594,7 +786,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       showOverlay({
         eyebrow: `${formatTime()} · НОЧЬ ОКОНЧЕНА`,
         title: "ОНО НАШЛО ТЕБЯ",
-        text: reason || "Тьма оказалась быстрее. В следующий раз спрячься до того, как услышишь его в комнате.",
+        text: reason || "Тьма оказалась быстрее. В следующий раз спрячься до того, как услышишь его в коридоре.",
         button: "Попробовать снова",
         hint: "Бег шумный. В укрытии задерживай дыхание",
         action: startGame
@@ -813,29 +1005,45 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   }
 
   function choosePatrolTarget() {
-    let choices = patrolPoints.filter((point) => distance(monster, point) > 0.9);
-    if (!choices.length) choices = patrolPoints;
+    const points = patrolRooms[monster.room] || patrolPoints;
+    let choices = points.filter((point) => distance(monster, point) > 0.9);
+    if (!choices.length) choices = points;
     monster.target = choices[Math.floor(Math.random() * choices.length)];
     monster.stuck = 0;
   }
 
+  function chooseSearchTarget() {
+    // Иногда монстр идёт проверять одно из укрытий — так он находит спрятавшегося.
+    const spot = hideSpots[Math.floor(Math.random() * hideSpots.length)];
+    monster.searchTarget = { x: spot.exitX, z: spot.exitZ };
+  }
+
   function beginHunt() {
     monster.state = "hunting";
-    monster.timer = random(12, 18) - (elapsed / NIGHT_DURATION) * 3;
+    monster.timer = random(16, 24) - (elapsed / NIGHT_DURATION) * 4;
     monster.awareness = 0;
     monster.path = null;
     monster.pathTarget = null;
     monster.stuck = 0;
+    monster.searchWait = 0;
+    monster.targetIsSearch = false;
+    const roomNames = Object.keys(patrolRooms);
+    monster.room = roomNames[Math.floor(Math.random() * roomNames.length)];
+    if (Math.random() < 0.55) chooseSearchTarget();
+    else monster.searchTarget = null;
     choosePatrolTarget();
   }
 
   function beginLeaving() {
     monster.state = "leaving";
-    monster.timer = 2.2;
-    monster.target = { x: 5.18, z: 1.5 };
+    monster.timer = 12;
+    monster.target = { x: 8, z: 10.3 };
     monster.awareness = 0;
     monster.exposure = 0;
     monster.alertedHide = false;
+    monster.searchTarget = null;
+    monster.searchWait = 0;
+    monster.targetIsSearch = false;
     monster.path = null;
     monster.pathTarget = null;
     notify("Шаги удаляются.", 2.2);
@@ -860,18 +1068,25 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     return -1;
   }
 
-  function findPath(from, to) {
-    const cell = 0.35;
-    const minX = ROOM.minX + monster.radius + 0.02;
-    const minZ = ROOM.minZ + monster.radius + 0.02;
-    const cols = Math.floor((ROOM.maxX - ROOM.minX - monster.radius * 2 - 0.04) / cell) + 1;
-    const rows = Math.floor((ROOM.maxZ - ROOM.minZ - monster.radius * 2 - 0.04) / cell) + 1;
-    const walkable = new Array(cols * rows).fill(false);
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < cols; col += 1) {
-        walkable[row * cols + col] = !collides(minX + col * cell, minZ + row * cell, monster.radius + 0.02);
+  // Проходимая сетка дома строится один раз после сборки комнат: стены и мебель статичны.
+  function buildNavigation() {
+    const cell = nav.cell;
+    const radius = MONSTER_RADIUS + 0.02;
+    nav.minX = ROOM.minX + radius;
+    nav.minZ = ROOM.minZ + radius;
+    nav.cols = Math.floor((ROOM.maxX - ROOM.minX - radius * 2) / cell) + 1;
+    nav.rows = Math.floor((ROOM.maxZ - ROOM.minZ - radius * 2) / cell) + 1;
+    nav.walkable = new Uint8Array(nav.cols * nav.rows);
+    for (let row = 0; row < nav.rows; row += 1) {
+      for (let col = 0; col < nav.cols; col += 1) {
+        nav.walkable[row * nav.cols + col] = collides(nav.minX + col * cell, nav.minZ + row * cell, radius) ? 0 : 1;
       }
     }
+  }
+
+  function findPath(from, to) {
+    const { cell, minX, minZ, cols, rows, walkable } = nav;
+    if (!walkable) return null;
     const start = nearestWalkableCell(from.x, from.z, cell, minX, minZ, cols, rows, walkable);
     const goal = nearestWalkableCell(to.x, to.z, cell, minX, minZ, cols, rows, walkable);
     if (start < 0 || goal < 0) return null;
@@ -939,7 +1154,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   function moveMonster(target, speed, dt) {
     if (!target) return 0;
     const targetDistance = distance(monster, target);
-    if (targetDistance < 0.02) return 0;
+    if (targetDistance < 0.02 || dt <= 0) return targetDistance;
     monster.repathTimer -= dt;
     const targetMoved = !monster.pathTarget || Math.hypot(target.x - monster.pathTarget.x, target.z - monster.pathTarget.z) > 0.12;
     if (!monster.path || monster.pathIndex >= monster.path.length || targetMoved || monster.repathTimer <= 0) {
@@ -948,7 +1163,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       monster.pathTarget = { x: target.x, z: target.z };
       monster.repathTimer = monster.state === "chase" ? 0.22 : 0.65;
     }
-    let waypoint = monster.path && monster.pathIndex < monster.path.length ? monster.path[monster.pathIndex] : target;
+    let waypoint = monster.path && monster.pathIndex < monster.path.length - 1 ? monster.path[monster.pathIndex] : target;
     while (monster.path && monster.pathIndex < monster.path.length - 1 && Math.hypot(monster.x - waypoint.x, monster.z - waypoint.z) < 0.18) {
       monster.pathIndex += 1;
       waypoint = monster.path[monster.pathIndex];
@@ -960,6 +1175,18 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     const moved = moveWithCollisions(monster, (dx / waypointDistance) * speed * dt, (dz / waypointDistance) * speed * dt);
     if (moved < 0.001) {
       monster.stuck += dt;
+      // Если монстр упёрся в угол, слегка сдвигаем его в свободную сторону.
+      const away = Math.atan2(-dz, -dx);
+      for (let i = 0; i < 8; i += 1) {
+        const angle = away + (i - 3.5) * (Math.PI / 4);
+        const stepX = Math.cos(angle) * 0.06;
+        const stepZ = Math.sin(angle) * 0.06;
+        if (!collides(monster.x + stepX, monster.z + stepZ, monster.radius)) {
+          monster.x += stepX;
+          monster.z += stepZ;
+          break;
+        }
+      }
       monster.path = null;
       monster.repathTimer = 0;
       if (monster.state === "hunting" && monster.stuck > 0.65) choosePatrolTarget();
@@ -1026,9 +1253,9 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       if (m.timer <= 0) {
         m.state = "warning";
         m.timer = 3.4;
-        m.x = 5.18;
-        m.z = 1.5;
-        notify("Шаги остановились у двери.", 3, true);
+        m.x = 8;
+        m.z = 10;
+        notify("Шаги остановились у входной двери.", 3, true);
         sound.knock();
       }
     } else if (m.state === "warning") {
@@ -1036,18 +1263,18 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       if (m.timer <= 0) {
         m.state = "entering";
         m.timer = 2.2;
-        m.target = { x: 4.35, z: 1.45 };
-        m.x = 5.18;
-        m.z = 1.5;
+        m.target = { x: 8, z: 8.5 };
+        m.x = 8;
+        m.z = 10;
         m.alertedHide = false;
         m.stuck = 0;
-        notify("Оно вошло в комнату.", 2.4, true);
+        notify("Оно вошло в дом.", 2.4, true);
         sound.alert();
       }
     } else if (m.state === "entering") {
       m.timer -= dt;
       const remaining = moveMonsterDirect(m.target, 0.85, dt);
-      if (remaining < 0.22 || m.timer <= 0 || (m.x < 4.7 && m.stuck < 0.4)) beginHunt();
+      if (remaining < 0.22 || m.timer <= 0 || (m.z < 9.5 && m.stuck < 0.4)) beginHunt();
     } else if (m.state === "hunting") {
       m.timer -= dt;
       if (m.timer <= 0) {
@@ -1078,8 +1305,26 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
           m.awareness = Math.max(0, m.awareness - dt);
         }
         if (m.state === "hunting") {
-          if (!m.target || distance(m, m.target) < 0.25) choosePatrolTarget();
-          moveMonster(m.target, 0.78 + progress * 0.22, dt);
+          if (m.searchWait > 0) {
+            // Монстр замер у укрытия и прислушивается.
+            m.searchWait -= dt;
+          } else if (!m.target || distance(m, m.target) < 0.3) {
+            if (m.targetIsSearch) {
+              m.targetIsSearch = false;
+              m.searchWait = 1.8;
+            } else if (m.searchTarget) {
+              m.target = m.searchTarget;
+              m.searchTarget = null;
+              m.targetIsSearch = true;
+              m.searchWait = 0;
+              m.path = null;
+              m.pathTarget = null;
+            } else {
+              choosePatrolTarget();
+            }
+          } else {
+            moveMonster(m.target, 0.78 + progress * 0.22, dt);
+          }
         }
       }
     } else if (m.state === "chase") {
@@ -1116,15 +1361,16 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       }
     } else if (m.state === "leaving") {
       m.timer -= dt;
-      const remaining = moveMonsterDirect(m.target, 1.0, dt);
-      if (remaining < 0.2 || m.timer <= 0 || m.x > 5.02) {
+      const remaining = moveMonster(m.target, 1.05, dt);
+      if (remaining < 0.3 || m.z > 9.9 || m.timer <= 0 || m.stuck > 1.2) {
         m.state = "away";
-        m.timer = random(8, 13) - progress * 3;
+        m.timer = random(9, 14) - progress * 3;
         m.awareness = 0;
         m.exposure = 0;
         m.alertedHide = false;
         m.path = null;
         m.pathTarget = null;
+        m.stuck = 0;
       }
     }
     if (mode === "playing") updateExposure(dt);
@@ -1156,8 +1402,14 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     monsterGroup.position.set(monster.x, Math.sin(monster.anim * 8) * 0.025, monster.z);
     monsterGroup.rotation.y = Math.PI / 2 - monster.facing;
     if (monsterMixer && visible) monsterMixer.update(dt);
-    const doorOpen = ["entering", "hunting", "chase", "leaving"].includes(monster.state);
-    doorPivot.rotation.y += ((doorOpen ? -1.18 : 0) - doorPivot.rotation.y) * Math.min(1, dt * 5);
+    const inside = ["entering", "hunting", "chase", "leaving"].includes(monster.state);
+    const playerNearBedroomDoor = player && !player.hidden && Math.hypot(player.x - 6.08, player.z) < 2.6;
+    doorPivot.rotation.y += ((inside || playerNearBedroomDoor ? 1.15 : 0) - doorPivot.rotation.y) * Math.min(1, dt * 5);
+    const frontDoorOpen = inside && (monster.z > 8.6 || monster.state === "leaving");
+    frontDoorPivot.rotation.y += ((frontDoorOpen ? 1.25 : 0) - frontDoorPivot.rotation.y) * Math.min(1, dt * 4);
+    const lightTime = performance.now() / 1000;
+    if (roomLights.kitchen) roomLights.kitchen.intensity = 0.8 + Math.sin(lightTime * 6.7) * 0.06 + Math.sin(lightTime * 2.3) * 0.05;
+    if (roomLights.desk) roomLights.desk.intensity = 0.75 + Math.sin(lightTime * 1.7) * 0.05;
     warningLight.intensity = monster.state === "warning" ? 3.5 + Math.sin(performance.now() / 130) * 1.5 : 0;
     monitorLight.intensity = 1.35 + Math.sin(performance.now() / 900) * 0.15;
     dust.rotation.y += dt * 0.008;
@@ -1180,7 +1432,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     ui.stamina.style.width = `${player.stamina}%`;
     ui.breath.style.width = `${player.breath}%`;
     ui.breathRow.classList.toggle("visible", Boolean(player.hidden));
-    ui.objective.textContent = player.hidden ? "В укрытии · оставайся тихим" : "Доживи до 6:00";
+    const doneTasks = tasksDone ? tasksDone.filter(Boolean).length : 0;
+    ui.objective.textContent = player.hidden
+      ? "В укрытии · оставайся тихим"
+      : `Задания ${doneTasks}/${taskSpots.length} · доживи до 6:00`;
     ui.hiddenMask.className = `hidden-mask${player.hidden ? ` ${player.hidden}` : ""}`;
     ui.crosshair.classList.toggle("visible", mode === "playing" && !player.hidden);
 
@@ -1188,10 +1443,10 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
     let dangerText = "Пока тихо";
     let alert = false;
     if (monster.state === "warning") {
-      dangerText = "Оно у двери";
+      dangerText = "Оно у входной двери";
       alert = true;
     } else if (monster.state === "entering") {
-      dangerText = "Оно вошло";
+      dangerText = "Оно вошло в дом";
       alert = true;
     } else if (monster.state === "chase") {
       dangerText = player.hidden ? "Оно ищет тебя" : "Оно видит тебя";
@@ -1200,7 +1455,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
       dangerText = "Оно совсем рядом";
       alert = true;
     } else if (monster.state === "hunting") {
-      dangerText = "Оно в комнате";
+      dangerText = "Оно бродит по дому";
       alert = true;
     } else if (monster.state === "leaving") {
       dangerText = "Оно уходит";
@@ -1368,7 +1623,7 @@ import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
   showOverlay({
     eyebrow: "КОМНАТА 07 · 00:00",
     title: "ДО ШЕСТИ",
-    text: "Ты слышишь шаги за дверью. Оно войдёт. Не дай ему найти тебя и продержись до утра.",
+    text: "Шаги за дверью. Оно войдёт в дом. Обойди коридор, кухню и рабочую комнату, найди укрытия и продержись до утра.",
     button: "Начать ночь",
     hint: "Мышь — обзор · F — фонарик · P или Esc — пауза",
     rules: true,
